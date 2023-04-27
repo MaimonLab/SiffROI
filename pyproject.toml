@@ -1,0 +1,28 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
+    "numpy",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "siffroi/_version.py"
+
+[project]
+name = "siffroi"
+dynamic = ["version"]
+readme = "README.md"
+description = "A package for annotating central complex ROIs"
+license = {text="GPL-3.0-or-later"}
+authors = [
+    {email = "thornquist@rockefeller.edu"},
+    {name = "Stephen Thornquist"},
+]
+
+dependencies = [
+    "numpy >= 1.15",
+    "scipy",
+    "h5py",
+]
