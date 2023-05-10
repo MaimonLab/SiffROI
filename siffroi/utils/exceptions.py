@@ -1,0 +1,2 @@
+class NoROIError(RuntimeError):
+    pass

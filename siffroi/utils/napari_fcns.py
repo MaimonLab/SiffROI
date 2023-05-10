@@ -19,15 +19,14 @@ SCT 12/11/2021
 """
 from typing import Callable, Iterable, Union
 import numpy as np
-import napari
-from napari import Viewer
-from napari.layers.shapes import Shapes
+# import napari
+# from napari import Viewer
+# from napari.layers.shapes import Shapes
 #import holoviews as hv
 #import holoviews.element.path as hvpath
 #from holoviews import Polygons
 
 from ..rois import ROI
-from .polygon_sources import PolygonSource, VizBackend
 
 __all__ = [
     'PolygonSourceNapari',

@@ -1,8 +1,14 @@
 from abc import ABC, abstractmethod
 from inspect import Parameter, signature
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
-from .rois import ROI
+from .utils.types import ReferenceFrames, AnatomyReference, FrameData
+from .utils.mixins import (
+    UsesFrameDataMixin, UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, 
+)
+
+if TYPE_CHECKING:
+    from .roi import ROI
 
 class ROIProtocol(ABC):
     """
@@ -16,6 +22,12 @@ class ROIProtocol(ABC):
     of a protocol and limited how things
     could be formatted. But these get more complicated
     and you basically have to do the type-hinting yourself...
+
+    NOTE: ALL EXTRACTION METHODS USING REFERENCE FRAMES, FRAME DATA, OR
+    ANATOMY REFERENCE SHOULD BE IN THE ORDER:
+    - FRAME_DATA
+    - REFERENCE_FRAMES
+    - ANATOMY_REFERENCE
     """
 
     name : str = "ROI Protocol superclass"
@@ -30,7 +42,7 @@ class ROIProtocol(ABC):
 
 
     @abstractmethod
-    def extract(self, *args, **kwargs)->ROI:
+    def extract(self, *args, **kwargs)->'ROI':
         """
         The main method of the ROI protocol.
         """
@@ -53,15 +65,29 @@ class ROIProtocol(ABC):
         }
 
     @property
-    def return_class(self)->type:
+    def return_class(self)->type['ROI']:
         return self.extract.__annotations__["return"]
     
     @property
+    def uses_frame_data(self)->bool:
+        """ Reflects whether the protocol uses the raw frame data"""
+        return (
+            "frame_data" in self.extraction_args.keys()
+            and self.extraction_args["frame_data"].annotation is FrameData
+        ) or isinstance(self, UsesFrameDataMixin)
+
+    @property
     def uses_reference_frames(self)->bool:
         """ Relies on extraction function having a parameter named `reference_frames`"""
-        return "reference_frames" in self.extraction_args.keys()
+        return (
+            "reference_frames" in self.extraction_args.keys()
+            and self.extraction_args["reference_frames"].annotation is ReferenceFrames
+        ) or isinstance(self, UsesReferenceFramesMixin)
     
     @property
-    def uses_polygon_source(self)->bool:
-        """ Relies on extraction function having a parameter named `polygon_source`"""
-        return "polygon_source" in self.extraction_args.keys()
+    def uses_anatomy_reference(self)->bool:
+        """ Relies on extraction function having a parameter named `anatomy_reference`"""
+        return (
+            "anatomy_reference" in self.extraction_args.keys()
+            and self.extraction_args["anatomy_reference"].annotation is AnatomyReference
+        ) or isinstance(self, UsesAnatomyReferenceMixin)

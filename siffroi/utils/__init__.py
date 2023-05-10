@@ -12,8 +12,14 @@ from typing import Iterable, Union
 from matplotlib.path import Path as mplPath
 import numpy as np
 
-from ..extern.pairwise import pairwise
-from .polygon_sources import PolygonSource
+def polygon_area(vertices : np.ndarray) -> float:
+    """
+    Computes area of a 2d polygon in n dimensions. Presumes
+    the only dimension that matters is the last two.
+    """
+    x = vertices[..., -1]
+    y = vertices[..., -2]
+    return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
 def polygon_to_z(polygon)->int:
     """
