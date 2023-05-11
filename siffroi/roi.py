@@ -2,12 +2,12 @@ from enum import Enum
 from pathlib import Path
 import importlib
 from logging import warning
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from h5py import File as h5File
 from h5py import Empty, Group
 import numpy as np
-from scipy import ndimage
+from scipy.ndimage import center_of_mass
 
 from .utils.exceptions import NoROIError
 
@@ -79,11 +79,11 @@ class ROI():
     SAVE_ATTRS : list[str] = []
 
     def __init__(self,
-            mask        : MaskLike                  = None,
-            polygon     : PolygonLike               = None,
-            image_shape : ImageShapeLike            = None,
-            name        : str                       = None,
-            slice_idx   : int                       = None,
+            mask        : 'MaskLike'                = None,
+            polygon     : 'PolygonLike'             = None,
+            image_shape : 'ImageShapeLike'          = None,
+            name        : Optional[str]             = None,
+            slice_idx   : Optional[int]             = None,
             subROIs     : list['subROI']            = [],
         ):
         """
@@ -117,10 +117,21 @@ class ROI():
         self.slice_idx = slice_idx
         self.subROIs = subROIs
 
-    def center(self)->np.ndarray:
-        """ Midpoint of the source polygon, or None if the polygon is None. """
+    def center(self, plane : Optional[int] = None)->np.ndarray:
+        """
+        If plane is None, returns the center of mass of the mask
+        across all planes. If plane is specified, returns only
+        the center of mass of the mask in that plane.
+        
+        If slice_idx is an int, then plane is ignored.
+        """
         mask = self.mask
-        return ndimage.measurements.center_of_mass(mask)
+        if not (self.slice_idx is None):
+            plane = None
+        if plane is None:
+            return center_of_mass(mask)
+        else:
+            return center_of_mass(mask[plane])
     
     def fuse(self, other : 'ROI')->np.ndarray:
         """ Fuses mask in place, but also returns it """
@@ -157,6 +168,7 @@ class ROI():
         if not (self._mask is None):
             return self._mask.astype(bool)
 
+        raise NotImplementedError("Mask from polygon not yet implemented")
         return np.zeros(self._shape, dtype=bool)
 
     @property
@@ -203,7 +215,7 @@ class ROI():
             raise NoROIError("No subROIs assigned to this ROI")
         return np.array([subroi.mask for subroi in self.subROIs])
 
-    def save(self, save_path : PathLike)->None:
+    def save(self, save_path : 'PathLike')->None:
         """
         Saves the ROIs as .h5roi files. These files are just a pickled
         version of the actual ROI object. ROI name is mangled with 
@@ -262,7 +274,7 @@ class ROI():
                 subroi.save(subrois_group)
 
     @classmethod
-    def load(cls, load_path : PathLike)->'ROI':
+    def load(cls, load_path : 'PathLike')->'ROI':
         """
         Subclasses may want to overload this to import additional attributes
         

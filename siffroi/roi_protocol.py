@@ -33,12 +33,13 @@ class ROIProtocol(ABC):
     name : str = "ROI Protocol superclass"
     base_roi_text : str = "Extract base ROI"
     on_extraction : Callable = None
+    extraction_arg_list: list[str] = []
 
-    def on_click(self, extraction_initiated):
-        """ Usually should be overwritten by subclass if 
-        you want to implement any custom functionality.
-        Should be done with or a wrapper, now that I think about it """
-        extraction_initiated()
+    # def on_click(self, extraction_initiated):
+    #     """ Usually should be overwritten by subclass if 
+    #     you want to implement any custom functionality.
+    #     Should be done with or a wrapper, now that I think about it """
+    #     extraction_initiated()
 
 
     @abstractmethod
@@ -50,14 +51,16 @@ class ROIProtocol(ABC):
 
     @property
     def extraction_args(self):
+        """ For GUI widgets """
         return {
             key : kw
             for key, kw in signature(self.extract).parameters.items()
-            if kw.kind is Parameter.POSITIONAL_OR_KEYWORD
+            if kw.name in Parameter.POSITIONAL_OR_KEYWORD
         }
     
     @property
     def segmentation_args(self):
+        """ For GUI widgets """
         return {
             key : kw
             for key, kw in signature(self.return_class.segment).parameters.items()

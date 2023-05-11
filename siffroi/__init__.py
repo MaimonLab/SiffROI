@@ -5,15 +5,15 @@ import inspect, textwrap
 from .roi_protocol import ROIProtocol
 from .roi import ROI
 from .utils.regions import RegionEnum, Region
-# from . import ellipsoid_body #fan_shaped_body, protocerebral_bridge, noduli, generic
+from . import ellipsoid_body #fan_shaped_body, protocerebral_bridge, noduli, generic
 
-# REGIONS = [
-#     Region(
-#         ['eb','ellipsoid body','ellipsoid', 'Ellipsoid body'],
-#         ellipsoid_body,
-#         'Use ellipse',
-#         RegionEnum.ELLIPSOID_BODY,
-#     ),
+REGIONS = [
+    Region(
+        ['eb','ellipsoid body','ellipsoid', 'Ellipsoid body'],
+        ellipsoid_body,
+        'Use ellipse',
+        RegionEnum.ELLIPSOID_BODY,
+    ),
     
 #     Region(
 #         ['fb','fsb','fan-shaped body','fan shaped body','fan', 'Fan-shaped body'],
@@ -39,7 +39,7 @@ from .utils.regions import RegionEnum, Region
 #         'dummy_method',
 #         RegionEnum.GENERIC
 #     )
-# ]
+]
 
 # # Default method for each brain region of interest
 # # Written this way so I can use the same names for

@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING, Optional
 import numpy as np
-from scipy.stats import circmean
+from scipy.ndimage import center_of_mass
 
 from ...roi import ROI, subROI, ViewDirection
+
+if TYPE_CHECKING:
+    from ...utils.types import MaskLike, PolygonLike, ImageShapeLike
 
 EB_OFFSET = (1/2) * np.pi # EPG going to left of each PB (when viewed from posterior) is the first ROI
 
@@ -45,16 +48,18 @@ class Ellipse(ROI):
     SAVE_ATTRS = [
         'orientation',
         'center_poly',
+        'view_direction',
     ]
 
     def __init__(
             self,
-            mask : np.ndarray = None,
-            polygon : np.ndarray = None,
-            image_shape : tuple[int] = None,
+            mask : 'MaskLike' = None,
+            polygon : 'PolygonLike' = None,
+            image_shape : 'ImageShapeLike' = None,
             slice_idx : int = None,
             orientation : float = 0.0,
-            center_poly : np.ndarray = None,
+            center_poly : Optional[np.ndarray] = None,
+            view_direction : ViewDirection = ViewDirection.ANTERIOR,
             **kwargs
         ):
         """
@@ -66,7 +71,9 @@ class Ellipse(ROI):
         body, where the ventral side is at the bottom of the image in some
         configurations but some image preps have the ventral side in a 
         different direction. Presumes 'orientation' at 0 is the ventral
-        side of the ellipse and is in radians.
+        side of the ellipse and is in radians. Orientation is how much
+        the line from posterodorsal to anteroventral is rotated clockwise
+        IN THE IMAGE. So ventral at the bottom = orientation = 3/2 * pi
         """
         super().__init__(
             mask = mask,
@@ -78,6 +85,7 @@ class Ellipse(ROI):
         )
         self.orientation = orientation
         self.center_poly = center_poly
+        self.view_direction = ViewDirection(view_direction)
 
     @property
     def wedges(self)->list['subROI']:
@@ -87,38 +95,29 @@ class Ellipse(ROI):
     @property
     def mask(self)->np.ndarray:
         """ Returns the mask of the Ellipse """
-        if not self._mask is None:
+        if not (self._mask is None):
             return self._mask
         
+        raise NotImplementedError("Mask from polygon not yet implemented for Ellipse")
 
-        grid = np.zeros(self._shape, dtype=bool)
-        raise NotImplementedError("Mask not yet implemented for Ellipse")
-
+    @property
+    def center_mask(self)->np.ndarray:
+        """
+        Returns the mask of the center polygon
+        """
         if self.center_poly is None:
-            return grid
-        if image is None and hasattr(self,'image'):
-            image = self.image
+            return None
+        if isinstance(self.center_poly, np.ndarray) and (self.center_poly.dtype == bool):
+            return self.center_poly
+        else:
+            raise NotImplementedError("Center mask not yet implemented for non-boolean center polygons")
 
-        from matplotlib.path import Path as mplPath
-        
-        # if isinstance(self.center_poly,hv.element.Polygons):
-        #     poly_as_path = mplPath(list(zip(self.center_poly.data[0]['x'],self.center_poly.data[0]['y'])), closed=True)
-        poly_as_path = mplPath(self.center_poly.data[0], closed = True) # these are usually stored as arrays
-       
-        xx, yy = np.meshgrid(*[np.arange(0,dimlen,1) for dimlen in image.T.shape])
-        x, y = xx.flatten(), yy.flatten()
-
-        rasterpoints = np.vstack((x,y)).T
-
-        inner_grid = poly_as_path.contains_points(rasterpoints)
-        inner_grid = inner_grid.reshape(image.shape)
-        grid[inner_grid] = False
-
-        return grid
 
     def segment(self, n_segments : int = 16, viewed_from : ViewDirection = ViewDirection.ANTERIOR)->None:
         """
-        Creates an attribute wedges, a list of WedgeROIs corresponding to segments
+        Creates an attribute wedges, a list of WedgeROIs corresponding to segments.
+        If slice_idx is None, the wedges span all planes. If slice_idx is an integer,
+        the wedges span only that plane.
         
         PARAMETERS
         ----------
@@ -138,56 +137,45 @@ class Ellipse(ROI):
                 'posterior'
         
         """
-
-        cx, cy = self.center()
-        ell = self.polygon
-
-        if (viewed_from == ViewDirection.ANTERIOR) or (viewed_from == ViewDirection.ANTERIOR.value):
-            angles = np.linspace(EB_OFFSET, EB_OFFSET - 2*np.pi, n_segments+1)
-        elif (viewed_from == ViewDirection.POSTERIOR) or (viewed_from == ViewDirection.POSTERIOR.value):
-            angles = np.linspace(EB_OFFSET , EB_OFFSET + 2*np.pi, n_segments+1)
+        if isinstance(self.center_poly, np.ndarray) and (self.center_poly.dtype != bool):
+            raise TypeError("Center poly must be a boolean array in current implementation")
+        
+        if self.slice_idx is None:
+            slicewise_segments = [
+                segment_ellipse(
+                    slice_mask,
+                    self.center(plane=slice_num) if self.center_poly is None else center_of_mass(self.center_mask[slice_num]),
+                    self.orientation,
+                    n_segments = n_segments,
+                    view_direction= self.view_direction
+                )
+                for slice_num, slice_mask in enumerate(self.mask)
+            ]
+            masks = np.swapaxes(
+                np.array(slicewise_segments), # z, mask, y, x
+                0,
+                1
+            )
         else:
-            raise ValueError(f"Argument 'viewed_from' is {viewed_from}, must be in {[x.value for x in ViewDirection]}")
-        angles += self.orientation 
-        self.perspective = viewed_from
-        # eek, bad terminology with my orientation variable from the class itself
-        offset = ell.orientation
+            masks = segment_ellipse(
+                self.mask,
+                self.center() if self.center_poly is None else center_of_mass(self.center_mask),
+                self.orientation,
+                n_segments = n_segments,
+                view_direction= self.view_direction
+            )
+        self.subROIs = [
+            self.WedgeROI(
+                mask = wedge_mask,
+                image_shape = self.shape,
+                slice_idx = self.slice_idx,
+                view_direction = self.view_direction,
+                name = f"Wedge {i}",
+                phase = angle,
+            )
+            for i, (wedge_mask, angle) in enumerate(zip(masks, np.linspace(-np.pi, np.pi, n_segments, endpoint=False)))
+        ]
 
-        # Go 360/n_segments degrees around the ellipse
-        # And draw a dividing line at the end
-        # The WedgeROI will build an ROI out of the sector
-        # of the ellipse between its input line boundaries
-        # dividing_lines = [
-        #     hv.Path(
-        #         {
-        #             'x':[cx, ell.x + (ell.width/2)*np.cos(offset)*np.cos(angle) - (ell.height/2)*np.sin(offset)*np.sin(angle)] ,
-        #             'y':[cy, ell.y + (ell.width/2)*np.sin(offset)*np.cos(angle) + (ell.height/2)*np.cos(offset)*np.sin(angle)]
-        #         }
-        #     )
-        #     for angle in angles
-        # ]
-        #
-        # image = None
-        # if hasattr(self,'image'):
-        #     image = self.image
-        # self.wedges = [
-        #     Ellipse.WedgeROI(
-        #         boundaries[0],
-        #         boundaries[1],
-        #         ell,
-        #         image=image,
-        #         slice_idx = self.slice_idx
-        #     )
-        #     for boundaries in zip(tuple(pairwise(dividing_lines)),tuple(pairwise(angles)))
-        # ]
-
-        #colorwheel = colorcet.colorwheel
-
-        idx = 0
-        # for wedge in self.wedges:
-        #     wedge.plotting_opts['fill_color'] = colorwheel[idx * int(len(colorwheel)/len(self.wedges))]
-        #     wedge.plotting_opts['fill_alpha'] = 0.3
-        #     idx += 1
 
     def __repr__(self)->str:
         """
@@ -228,46 +216,29 @@ class Ellipse(ROI):
             bounding_paths
         """
         def __init__(self,
-                bounding_paths : tuple[Any],
-                bounding_angles : tuple[float],
-                ellipse : 'Ellipse',
-                slice_idx : int = None,
+                mask : 'MaskLike' = None,
+                polygon : 'PolygonLike' = None,
+                image_shape : 'ImageShapeLike' = None,
+                phase : Optional[float] = None,
+                slice_idx : Optional[int] = None,
+                view_direction : ViewDirection = ViewDirection.ANTERIOR,
                 **kwargs
             ):
-            super().__init__(self, **kwargs)
-
-            self.bounding_paths = bounding_paths
-            self.bounding_angles = bounding_angles
+            super().__init__(
+                mask = mask,
+                polygon = polygon,
+                image_shape = image_shape,
+                slice_idx = slice_idx,
+                **kwargs
+            )
+            self.phase = phase
             self.slice_idx = slice_idx
-
-            sector_range = np.linspace(bounding_angles[0], bounding_angles[1], 60)
-            offset = ellipse.orientation
-
-            # Define the wedge polygon
-            # self.polygon = hv.Polygons(
-            #     {
-            #         'x' : bounding_paths[0].data[0]['x'].tolist() +
-            #             [
-            #                 ellipse.x + (ellipse.width/2)*np.cos(offset)*np.cos(point) - (ellipse.height/2)*np.sin(offset)*np.sin(point)
-            #                 for point in sector_range
-            #             ] +
-            #             list(reversed(bounding_paths[-1].data[0]['x'])),
-
-            #         'y' : bounding_paths[0].data[0]['y'].tolist() +
-            #             [
-            #                 ellipse.y + (ellipse.width/2)*np.sin(offset)*np.cos(point) + (ellipse.height/2)*np.cos(offset)*np.sin(point)
-            #                 for point in sector_range
-            #             ] +
-            #             list(reversed(bounding_paths[-1].data[0]['y']))
-            #     }
-            # )
-        
-        def visualize(self):
-            return self.polygon.opts(**self.plotting_opts)
+            self.view_direction = ViewDirection(view_direction)
 
         @property
-        def angle(self):
-            return circmean(self.bounding_angles)
+        def angle(self)->Optional[float]:
+            """ Alias for phase """
+            return self.phase
 
         def __repr__(self):
             """
@@ -275,7 +246,48 @@ class Ellipse(ROI):
             """
             ret_str = "ROI of class Wedge of an Ellipse\n\n"
             ret_str += f"\tCentered at {self.center()}\n"
-            ret_str += f"\tOccupies angles in range {self.bounding_angles}\n"
-            ret_str += f"Custom plotting options: {self.plotting_opts}\n"
+            ret_str += f"\tWith phase {'(unknown)' if self.phase is None else self.phase}\n"
 
             return ret_str
+        
+def segment_ellipse(
+    ellipse_mask : np.ndarray, # presumed 2D
+    center_pt : np.ndarray,
+    orientation : float,
+    n_segments : int = 16,
+    view_direction : ViewDirection = ViewDirection.ANTERIOR
+)->list[np.ndarray]:
+    """
+    Draws spokes radiating from center_pt and
+    masks ellipse_mask within each spoke. Orientation
+    determines the offset from the "downward direction"
+    and the order of the returned arrays.
+
+    ellipse_mask : np.ndarray of dim 2
+    """
+
+    view_direction = ViewDirection(view_direction)
+
+    angles = np.linspace(-np.pi, np.pi, n_segments+1, endpoint = False)
+
+    # Draw a line from the center to the edge of the ellipse
+    # at each angle
+    center = center_pt[1] - 1j*center_pt[0] # x + iy in terms of SCREEN coordinates
+
+    grid_xx, grid_yy = np.meshgrid(*(np.arange(dim) for dim in ellipse_mask.shape))
+    
+    cplx_mask = grid_xx - 1j*grid_yy - center
+
+    cplx_mask *= -1j # Rotate the 0 point downward
+    cplx_mask *= np.exp(-1j*orientation) # Rotate the ellipse to the correct orientation
+    # invert the angles if the view direction is posterior
+    cplx_mask = 1.0/cplx_mask if view_direction == ViewDirection.POSTERIOR else cplx_mask
+
+    return [
+        np.logical_and(
+            (np.angle(cplx_mask) >= angles[i]) *
+            (np.angle(cplx_mask) < angles[i+1]),
+            ellipse_mask
+        )
+        for i in range(len(angles)-1)
+    ]

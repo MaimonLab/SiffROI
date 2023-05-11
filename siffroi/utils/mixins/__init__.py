@@ -12,6 +12,8 @@ class UsesReferenceFramesMixin():
     UsesReferenceFrames means it uses the reference frames layer,
     possibly in addition to the raw data layer
     """
+    REFERENCE_SHAPE_TYPE : str = "any"
+
     @property
     def reference_frames_arg_num(self)->int:
         """ Returns the position of the reference_frames argument in the extraction function """
@@ -33,3 +35,7 @@ class ExpectsShapesMixin():
     """
 
     SHAPE_TYPE : str = "any"
+    @property
+    def shape_arg_num(self)->int:
+        """ Returns the position of the shapes argument in the extraction function """
+        return list(self.extraction_args.keys()).index("shapes")

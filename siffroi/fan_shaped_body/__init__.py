@@ -1,1 +1,1 @@
-from .outline_fan import OutlineFan
+from .protocols.outline_fan import OutlineFan

@@ -500,35 +500,6 @@ def get_largest_lines_napari(
 
     # return _slice_idx_parsing(slice_idx, _shapes_to_lines, _largest_lines_tuple_from_viable, n_lines, lines_layer)
 
-def get_largest_ellipse_napari(
-        viewer : napari.Viewer,
-        shape_layer_name : str = 'ROI shapes',
-        slice_idx : int = None,
-        n_ellipses : int = 1
-    ):
-    """
-    Expects a napari Viewer, and returns the largest ellipse in the
-    shapes layer(s) named + from which slice it came. n_ellipses is the
-    number of polygons to return.
-    If >1, returns a LIST of tuples, with the 1st tuple being the largest polygon, 
-    the next being the next largest polygon, etc. If there
-    are fewer polygons than requested, will raise an exception. 
-
-    Returns as Holoviews Ellipse, so that the napari import variation
-    issues are resolved.
-    """
-    return None
-    # if not (hasattr(viewer, 'layers')):
-    #     raise ValueError(f"Argument viewer must be of type napari.Viewer, not {type(viewer)}")
-
-    # # get the layer matching the name expected. Throws an
-    # # error if no such layer.
-    # poly_layer = next(filter(lambda x: x.name == shape_layer_name, viewer.layers),None) 
-    # if not type(poly_layer) is Shapes:
-    #     raise TypeError(f"Specified layer {shape_layer_name} is not a layer of polygons (shapes)")
-    
-    # return _slice_idx_parsing(slice_idx, _shapes_to_ellipses, _largest_ellipse_tuple_from_viable, n_ellipses, poly_layer)    
-
 def get_largest_polygon_napari(
         viewer : napari.Viewer, 
         shape_layer_name : str = 'ROI shapes',
