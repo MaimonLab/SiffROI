@@ -1,54 +1,58 @@
 # Code for ROI extraction from the protocerebral bridge after manual input
 
-# Feels like I use too much interfacing with the CorrelationWindow class,
-# which seems like it should do as much as possible without interacting with
-# this stuff...
-from typing import Any
+# Relies on my separate fourcorr module
+from typing import Any, TYPE_CHECKING
 import numpy as np
 
-from siffpy import SiffReader
-from ..roi_protocol import ROIProtocol
-from ..rois import GlobularMustache
-#from siffpy.siffroi.roi_protocols.utils import PolygonSource
-#from .von_mises.napari_tools import CorrelationWindow
+import fourcorr
 
-class FitVonMises(ROIProtocol):
+from ..rois.mustache import GlobularMustache
+from ...roi_protocol import ROIProtocol
+from ...roi import ViewDirection
+from ...utils.mixins import (
+    UsesReferenceFramesMixin, UsesFrameDataMixin
+)
+from ...utils.mixins.napari import ExtractionWithCallback
+
+if TYPE_CHECKING:
+    from ...utils.types import (
+        ReferenceFrames, FrameData
+    )
+    from fourcorr.napari.correlation import CorrelationWindow
+
+class FitVonMises(
+    UsesFrameDataMixin,
+    UsesReferenceFramesMixin,
+    ExtractionWithCallback,
+    ROIProtocol,
+    ):
 
     name = "Fit von Mises"
     base_roi_text = "View correlation map"
 
-    def on_click(self, extraction_initiated_event):
-        """
-        Opens a correlation window to allow annotation
-        of the protocerebral bridge, passes the
-        "extraction initiated" event to the correlation
-        window's done button.
-        """
-        viewer = extraction_initiated_event.source.napari_interface
-        # corr_window = CorrelationWindow(viewer)
-        # corr_window.done_button.clicked.connect(
-        #     lambda *args: extraction_initiated_event()
-        # )
-        # sr : SiffReader = viewer.siffreader
-        # corr_window.provide_roi_shapes_layer(
-        #     viewer.drawn_rois_layer,
-        #     sr.im_params.single_channel_volume,
-        # )
-        # corr_window.link_siffreader(sr)
-        # self.corr_window = corr_window
-        
     def extract(
             self,
-            reference_frames : np.ndarray,
-            polygon_source : Any,
+            frame_data : 'FrameData',
+            reference_frames : 'ReferenceFrames',
+            view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     )->GlobularMustache:
         """
         Returns a GlobularMustache ROI made up of the individual
         masks extracted by correlating every pixel to the source ROIs
         """
-        if not hasattr(self, 'corr_window'):
-            raise RuntimeError("Correlation window not initialized -- run protocol first!")
-        
-        return GlobularMustache(
-            globular_glomeruli_masks = self.corr_window.seed_manager.get_masks()
+        fca = fourcorr.FourCorrAnalysis(
+            frames = frame_data,
+            annotation_images = reference_frames,
         )
+
+        fca.done_clicked.connect(lambda x: self.fca_to_pb(x, view_direction))
+        return self.events.extracted
+
+    def fca_to_pb(self, event : Any, view_direction : 'ViewDirection'):
+        corr_window : CorrelationWindow = event.source
+        glomeruli = corr_window.masks
+        self.roi = GlobularMustache(
+            globular_glomeruli_masks = glomeruli,
+            view_direction=view_direction,
+        )
+        self.events.extracted()

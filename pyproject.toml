@@ -10,6 +10,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "siffroi/_version.py"
 
+[tool.setuptools]
+packages = ["siffroi"]
+
 [project]
 name = "siffroi"
 dynamic = ["version"]

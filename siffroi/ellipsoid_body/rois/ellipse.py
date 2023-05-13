@@ -75,11 +75,12 @@ class Ellipse(ROI):
         the line from posterodorsal to anteroventral is rotated clockwise
         IN THE IMAGE. So ventral at the bottom = orientation = 3/2 * pi
         """
+        if not "name" in kwargs:
+            kwargs["name"] = "Ellipse"
         super().__init__(
             mask = mask,
             polygon = polygon,
             image_shape = image_shape,
-            name = 'Ellipse',
             slice_idx = slice_idx,
             **kwargs
         )
@@ -88,7 +89,7 @@ class Ellipse(ROI):
         self.view_direction = ViewDirection(view_direction)
 
     @property
-    def wedges(self)->list['subROI']:
+    def wedges(self)->list['WedgeROI']:
         """ Returns the list of wedge ROIs """
         return self.subROIs
 
@@ -165,7 +166,7 @@ class Ellipse(ROI):
                 view_direction= self.view_direction
             )
         self.subROIs = [
-            self.WedgeROI(
+            WedgeROI(
                 mask = wedge_mask,
                 image_shape = self.shape,
                 slice_idx = self.slice_idx,
@@ -176,6 +177,8 @@ class Ellipse(ROI):
             for i, (wedge_mask, angle) in enumerate(zip(masks, np.linspace(-np.pi, np.pi, n_segments, endpoint=False)))
         ]
 
+    def __str__(self)->str:
+        return self.__repr__()
 
     def __repr__(self)->str:
         """
@@ -191,8 +194,8 @@ class Ellipse(ROI):
         ret_str += f"\tOrientation {self.orientation}\n"
 
         return ret_str
-
-    class WedgeROI(subROI):
+        
+class WedgeROI(subROI):
         """
         Local class for ellipsoid body wedges. Very simple
 
@@ -215,6 +218,11 @@ class Ellipse(ROI):
             of the ellipse that correspond to the edge
             bounding_paths
         """
+
+        SAVE_ATTRS = [
+            'phase',
+        ]
+        
         def __init__(self,
                 mask : 'MaskLike' = None,
                 polygon : 'PolygonLike' = None,
@@ -268,7 +276,7 @@ def segment_ellipse(
 
     view_direction = ViewDirection(view_direction)
 
-    angles = np.linspace(-np.pi, np.pi, n_segments+1, endpoint = False)
+    angles = np.linspace(-np.pi, np.pi, n_segments+1, endpoint = True)
 
     # Draw a line from the center to the edge of the ellipse
     # at each angle
@@ -278,7 +286,7 @@ def segment_ellipse(
     
     cplx_mask = grid_xx - 1j*grid_yy - center
 
-    cplx_mask *= -1j # Rotate the 0 point downward
+    cplx_mask *= -1j # Rotate the 0 point downward in image coordinates
     cplx_mask *= np.exp(-1j*orientation) # Rotate the ellipse to the correct orientation
     # invert the angles if the view direction is posterior
     cplx_mask = 1.0/cplx_mask if view_direction == ViewDirection.POSTERIOR else cplx_mask

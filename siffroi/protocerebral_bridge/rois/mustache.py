@@ -1,33 +1,60 @@
-from typing import Any
+from typing import Any, TYPE_CHECKING, Optional
 from functools import reduce
 
 import numpy as np
 
 from ...roi import ROI, subROI
+if TYPE_CHECKING:
+    from ...utils.types import MaskLike, PolygonLike, ImageShapeLike
+    from ...roi import ViewDirection
 
 class GlobularMustache(ROI):
     """
     A mustache-shaped ROI for individually circuled glomeruli
     """
 
+    SAVE_ATTRS = [
+        'view_direction',
+    ]
+
     def __init__(
         self,
-        polygon: Any = None,
-        image: np.ndarray = None,
+        mask : 'MaskLike' = None,
+        polygon: 'PolygonLike' = None,
+        image_shape : 'ImageShapeLike' = None,
         name: str = None,
         slice_idx: int = None,
-        globular_glomeruli_masks: list[np.ndarray] = None,
+        globular_glomeruli_masks: Optional[list[np.ndarray]] = None,
+        phases : Optional[list[Optional[float]]] = None,
+        view_direction : Optional[ViewDirection] = ViewDirection.POSTERIOR,
     ):
-        super().__init__(polygon, image, name, slice_idx)
-        self.glomeruli = [
+        
+        if phases is None:
+            phases = [None for _ in globular_glomeruli_masks]
+
+        self.subROIs = [
             GlobularMustache.GlomerulusROI(
-                polygon=polygon,
-                image=image,
+                mask = glom,
+                polygon=None,
+                image_shape=image_shape,
                 name=name,
                 slice_idx=slice_idx,
-                mask = glom,
-            ) for glom in globular_glomeruli_masks
+                pseudophase=phase,
+            ) for glom, phase in zip(globular_glomeruli_masks,phases)
         ]
+
+        if mask is None:
+            mask = np.array(self.subROIs).any(axis=0)
+
+        super().__init__(
+            mask = mask,
+            polygon = polygon,
+            image_shape = image_shape,
+            name = name,
+            slice_idx = slice_idx,
+        )
+
+        self.view_direction = view_direction
     
     def mask(self, image : np.ndarray = None)->np.ndarray:
         return reduce(np.logical_or, [glom.mask(image) for glom in self.glomeruli])
@@ -39,91 +66,33 @@ class GlobularMustache(ROI):
         pass
 
     @property
-    def _subROIs(self):
-        return self.glomeruli
+    def glomeruli(self):
+        return self.subROIs
 
     class GlomerulusROI(subROI):
         """
         A single glomerulus
         """
+
+        SAVE_ATTRS = [
+            'pseudophase',
+        ]
+
         def __init__(
             self,
-            polygon: Any = None,
-            image: np.ndarray = None,
+            mask : 'MaskLike' = None,
+            polygon: 'PolygonLike' = None,
+            image_shape : 'ImageShapeLike' = None,
             name: str = None,
             slice_idx: int = None,
             pseudophase : float = None,
-            mask : np.ndarray = None,
         ):
-            super().__init__(polygon, image, name, slice_idx)
-            self._mask = mask
+            super().__init__(
+                mask = mask,
+                polygon=polygon,
+                image_shape=image_shape,
+                name=name,
+                slice_idx=slice_idx,
+            )
             self.pseudophase = pseudophase
 
-        def mask(self, image : np.ndarray = None)->np.ndarray:
-            if self._mask is not None:
-                return self._mask
-            else:
-                return super().mask(image)
-
-
-class Mustache(ROI):
-    """
-    Mustache-shaped ROI used for the protocerebral bridge
-
-    ........
-
-    Attributes
-    ----------
-
-    polygon        : hv.element.path.Polygons
-
-        A HoloViews Polygon representing the region of interest.
-
-    slice_idx      : int
-
-        Integer reference to the z-slice that the source polygon was drawn on.
-
-    .......
-
-    Methods
-    ------------
-
-    compute midline() -> None
-
-        Not yet implemented 
-
-    segment(n_segments) -> None
-
-        Not yet implemented
-
-    get_roi_masks(image) -> list[np.ndarray]
-
-        Returns a list (or np.ndarray) of the masks for all wedge parameters (if they exist)
-    """
-
-    def __init__(
-            self,
-            polygon : Any,
-            slice_idx : int = None,
-            **kwargs
-        ):
-
-        if not isinstance(polygon, Any):
-            raise ValueError("Mustache ROI must be initialized with a polygon")
-        super().__init__(polygon, slice_idx = slice_idx, **kwargs)
-        self.plotting_opts = {}
-        raise NotImplementedError()
-
-    def segment(self) -> None:
-        """
-        TODO: come up with way to implement these
-        """
-        return
-
-    class Glomerulus(subROI):
-        """
-        subROI class for a protocerebral bridge Mustache shape.
-
-        TODO: IMPLEMENT
-        """
-        

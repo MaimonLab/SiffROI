@@ -10,6 +10,7 @@ SCT Dec 29 2021
 from typing import Iterable, Union
 
 from matplotlib.path import Path as mplPath
+from matplotlib.pyplot import get_cmap
 import numpy as np
 
 def polygon_area(vertices : np.ndarray) -> float:
@@ -21,26 +22,19 @@ def polygon_area(vertices : np.ndarray) -> float:
     y = vertices[..., -2]
     return 0.5*np.abs(np.dot(x,np.roll(y,1))-np.dot(y,np.roll(x,1)))
 
-def polygon_to_z(polygon)->int:
+def masks_to_rgba(labeled_image_mask : np.ndarray, cmap_str : str = 'hsv')->np.ndarray:
     """
-    Returns the z coordinate of a polygon. If it's a list of polygons, returns the z coordinate of the first one.
+    Converts a labeled mask to an RGBA image with hsv cmap.
     """
-    raise NotImplementedError()
-    # if isinstance(polygon, Polygons):
-    #     return polygon.data[0]['z'][0]
-    # elif isinstance(polygon, Ellipse):
-    #     return polygon.data['z'][0]
-    # elif isinstance(polygon, np.ndarray):
-    #     if polygon.shape[-1] != 3:
-    #         raise ValueError("Polygon passed does not contain z information")
-    #     if not all(
-    #         vert[0] == polygon[0][0]    
-    #         for vert in polygon
-    #     ):
-    #         raise ValueError("Polygon passed does not have the same z coordinate for all vertices")
-    #     return polygon[0][0]
-    # else:
-    #     raise TypeError("Input must be a holoviews Polygons object, a holoviews Ellipse object, or a numpy array")
+
+    cmap = get_cmap(cmap_str)
+
+    rgba = cmap(
+        (labeled_image_mask.astype(float)/labeled_image_mask.max()) ,
+        alpha = labeled_image_mask > 0,
+    )
+    return rgba
+
 
 def polygon_to_mask(polygon, image_shape : tuple[int,int]) -> np.ndarray:
     """

@@ -10,6 +10,7 @@ import numpy as np
 from scipy.ndimage import center_of_mass
 
 from .utils.exceptions import NoROIError
+from .utils import masks_to_rgba
 
 if TYPE_CHECKING:
     from .utils.types import PathLike, MaskLike, PolygonLike, ImageShapeLike
@@ -215,6 +216,30 @@ class ROI():
             raise NoROIError("No subROIs assigned to this ROI")
         return np.array([subroi.mask for subroi in self.subROIs])
 
+    @property
+    def labeled_subrois(self) -> np.ndarray:
+        """
+        Returns a single array consisting of the overlaid subROI
+        masks, with an identifying number for each of them from
+        1 - n for all the subROIs. 0 is background.
+        """
+        
+        return np.array(
+            [
+                (i+1)*subroi
+                for i, subroi in enumerate(self.subroi_masks)
+            ]
+        ).sum(axis=0)
+
+    @property
+    def rgba_subrois(self) -> np.ndarray:
+        """
+        Labeled_subrois as an RGBA image with the background
+        as transparent using the heatmap 'turbo'
+        """
+        return masks_to_rgba(self.labeled_subrois)
+
+
     def save(self, save_path : 'PathLike')->None:
         """
         Saves the ROIs as .h5roi files. These files are just a pickled
@@ -248,7 +273,14 @@ class ROI():
                         dtype = getattr(self, attr).dtype,
                     )
                 else:
-                    f.attrs[attr] = getattr(self, attr)
+                    this_attr = getattr(self, attr)
+                    if this_attr is None:
+                        attr_out = Empty("s")
+                    if isinstance(this_attr,Enum):
+                        attr_out = this_attr.value
+                    else:
+                        attr_out = this_attr 
+                    f.attrs[attr] = attr_out
 
             f.create_dataset(
                 'mask',
@@ -271,7 +303,7 @@ class ROI():
             subrois_group = f.create_group('subROIs')
 
             for i, subroi in enumerate(self.subROIs):
-                subroi.save(subrois_group)
+                subroi.save_to_group(subrois_group)
 
     @classmethod
     def load(cls, load_path : 'PathLike')->'ROI':
@@ -312,14 +344,25 @@ class ROI():
                         )
                     )
 
-        return cls(
-            mask = mask,
-            polygon = polygon,
-            image_shape = image_shape,
-            name = name,
-            slice_idx = slice_idx,
-            subROIs = subrois,
-        )
+            roi = cls(
+                mask = mask,
+                polygon = polygon,
+                image_shape = image_shape,
+                name = name,
+                slice_idx = slice_idx,
+                subROIs = subrois,
+            )
+
+            for attr in cls.SAVE_ATTRS:
+                if attr in f.attrs.keys():
+                    if isinstance(f.attrs[attr], Empty):
+                        setattr(roi, attr, None)
+                    else:
+                        setattr(roi, attr, f.attrs[attr])
+                if attr in f.keys():
+                    setattr(roi, attr, f[attr][()])
+        
+        return roi
         
     def __hash__(self)->float:
         if hasattr(self, 'image'):
@@ -340,6 +383,9 @@ class ROI():
             return str(self._name) + str(self.__hash__())
         else:
             return str(self.__hash__())
+
+    def __str__(self)->str:
+        return self.__repr__()
 
     def __repr__(self)->str:
         """
@@ -437,18 +483,21 @@ class subROI(ROI):
         name = None if isinstance(nm := subroi_group.attrs['name'],Empty) else nm
         slice_idx = None if isinstance(sl_id := subroi_group.attrs['slice_idx'], Empty) else sl_id
 
-        save_attr_dict = {}
-        for attr in cls.SAVE_ATTRS:
-            try:
-                save_attr_dict[attr] = subroi_group.attrs[attr]
-            except:
-                warning(f"Attribute {attr} not found when loading subROI {subroi_group.attrs['name']}")
-                
-        return cls(
+        subroi = cls(
             mask = mask,
             polygon = polygon,
             image_shape = image_shape,
             name = name,
             slice_idx = slice_idx,
-            **save_attr_dict,
         )
+        
+        for attr in cls.SAVE_ATTRS:
+            if attr in subroi_group.attrs.keys():
+                if isinstance(subroi_group.attrs[attr], Empty):
+                    setattr(subroi, attr, None)
+                else:
+                    setattr(subroi, attr, subroi_group.attrs[attr])
+            if attr in subroi_group.keys():
+                setattr(subroi, attr, subroi_group[attr][()])
+
+        return subroi

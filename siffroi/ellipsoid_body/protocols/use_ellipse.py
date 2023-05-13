@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 import numpy as np
 
 from .extra_rois import ExtraRois
@@ -6,10 +6,14 @@ from ...roi_protocol import ROIProtocol
 from ...roi import ViewDirection
 from ..rois.ellipse import Ellipse
 from ...utils import polygon_area
-from ...utils.types import ReferenceFrames, AnatomyReference
 from ...utils.mixins import (
     UsesAnatomyReferenceMixin, UsesReferenceFramesMixin, ExpectsShapesMixin
 )
+
+if TYPE_CHECKING:
+    from ...utils.types import (
+        MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
+    )
 
 class UseEllipse(
         ExpectsShapesMixin,
@@ -20,8 +24,9 @@ class UseEllipse(
 
     name = "Use ellipse"
     base_roi_text = "Extract ellipse"
+    
     SHAPE_TYPE = "ellipse"
-    REFERENCE_SHAPE_TYPE = "line"
+    ANATOMY_REFERENCE_SHAPE_TYPE = "line"
 
     extraction_arg_list = [
         "extra_rois", "view_direction"
@@ -29,12 +34,12 @@ class UseEllipse(
 
     def extract(
         self,
-        reference_frames : ReferenceFrames,
-        anatomy_reference : AnatomyReference,
+        reference_frames : 'ReferenceFrames',
+        anatomy_reference : 'AnatomyReference',
         shapes : list[np.ndarray],
         slice_idx : int = None,
-        extra_rois : ExtraRois = ExtraRois.CENTER,
-        view_direction : ViewDirection = ViewDirection.ANTERIOR,
+        extra_rois : 'ExtraRois' = ExtraRois.CENTER,
+        view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     )->Ellipse: 
         image_shape = reference_frames.shape
         return use_ellipse(
@@ -48,12 +53,12 @@ class UseEllipse(
 
 def use_ellipse(
     ellipses : list[np.ndarray],
-    anatomy_reference : AnatomyReference,
+    anatomy_reference : 'AnatomyReference',
     image_shape : tuple[int],
-    view_direction : ViewDirection = ViewDirection.ANTERIOR,
+    view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     slice_idx : Optional[int] = -1,
-    extra_rois : ExtraRois = ExtraRois.CENTER,
-    **kwargs) -> Ellipse:
+    extra_rois : 'ExtraRois' = ExtraRois.CENTER,
+    **kwargs) -> 'Ellipse':
     """
     Simply takes the largest ellipse type shape in a viewer
     and uses it as the bound! Ellipses go TOP LEFT, TOP RIGHT,
@@ -83,6 +88,8 @@ def use_ellipse(
     """
     FROM_MASK = False
     slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
+    if len(ellipses) == 0:
+        raise ValueError("No suitable ellipses provided")
     
     if all([ellipse.dtype == bool for ellipse in ellipses]):
         # If we have a boolean mask, we can just use that as the
@@ -120,13 +127,13 @@ def use_ellipse(
             [
                 np.sum(ellipse)
                 for ellipse in ellipses
-                if ellipse[0][0] == slice_idx
+                if np.round(ellipse[0][0]) == slice_idx
             ]
         ) if FROM_MASK else np.argsort(
             [
                 polygon_area(ellipse)
                 for ellipse in ellipses
-                if ellipse[0][0] == slice_idx
+                if np.round(ellipse[0][0]) == slice_idx
             ]
         )
 
@@ -170,7 +177,7 @@ def use_ellipse(
 
     orientation = 0.0
 
-    if not (anatomy_reference is None):
+    if not (anatomy_reference is None) and (len(anatomy_reference) > 0):
         if isinstance(anatomy_reference, (tuple,list)):
             anatomy_reference = anatomy_reference[0]
         # Goes postero-dorsal to antero-ventral

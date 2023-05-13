@@ -31,6 +31,11 @@ also subclasses `UsesFrameDataMixin` or `UsesReferenceFramesMixin`,
 which can be reflected by the property `uses_frame_data` or 
 `uses_reference_frames`.
 
+Please note that for `siff-napari` to work properly, the
+return annotations on `extract` must be the ACTUAL class and
+not a string hint. Otherwise the object's `__annotations__['return']`
+will read a `str`
+
 ## ROI
 
 The `ROI` base class has a few attributes, not all of which

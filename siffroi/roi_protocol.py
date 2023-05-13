@@ -35,13 +35,6 @@ class ROIProtocol(ABC):
     on_extraction : Callable = None
     extraction_arg_list: list[str] = []
 
-    # def on_click(self, extraction_initiated):
-    #     """ Usually should be overwritten by subclass if 
-    #     you want to implement any custom functionality.
-    #     Should be done with or a wrapper, now that I think about it """
-    #     extraction_initiated()
-
-
     @abstractmethod
     def extract(self, *args, **kwargs)->'ROI':
         """
@@ -55,7 +48,7 @@ class ROIProtocol(ABC):
         return {
             key : kw
             for key, kw in signature(self.extract).parameters.items()
-            if kw.name in Parameter.POSITIONAL_OR_KEYWORD
+            if kw.kind is Parameter.POSITIONAL_OR_KEYWORD
         }
     
     @property
