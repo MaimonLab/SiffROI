@@ -240,7 +240,6 @@ class WedgeROI(subROI):
                 **kwargs
             )
             self.phase = phase
-            self.slice_idx = slice_idx
             self.view_direction = ViewDirection(view_direction)
 
         @property
@@ -282,7 +281,7 @@ def segment_ellipse(
     # at each angle
     center = center_pt[1] - 1j*center_pt[0] # x + iy in terms of SCREEN coordinates
 
-    grid_xx, grid_yy = np.meshgrid(*(np.arange(dim) for dim in ellipse_mask.shape))
+    grid_yy, grid_xx = np.meshgrid(*(np.arange(dim) for dim in ellipse_mask.shape), indexing = 'ij')
     
     cplx_mask = grid_xx - 1j*grid_yy - center
 

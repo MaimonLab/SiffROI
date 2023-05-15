@@ -5,7 +5,7 @@ import inspect, textwrap
 from .roi_protocol import ROIProtocol
 from .roi import ROI
 from .utils.regions import RegionEnum, Region
-from . import ellipsoid_body#, protocerebral_bridge, fan_shaped_body, noduli, generic
+from . import ellipsoid_body, fan_shaped_body # protocerebral_brdge, noduli, generic
 
 from ._version import __version__, version, version_tuple, __version_tuple__
 
@@ -17,12 +17,13 @@ REGIONS = [
         RegionEnum.ELLIPSOID_BODY,
     ),
     
-#     Region(
-#         ['fb','fsb','fan-shaped body','fan shaped body','fan', 'Fan-shaped body'],
-#         fan_shaped_body,
-#         'Outline fan',
-#         RegionEnum.FAN_SHAPED_BODY
-#     ),
+    Region(
+        ['fb','fsb','fan-shaped body','fan shaped body','fan', 'Fan-shaped body'],
+        fan_shaped_body,
+        'Outline fan',
+        RegionEnum.FAN_SHAPED_BODY
+    ),
+    
 #     Region(
 #         ['pb','pcb','protocerebral bridge','bridge', 'Protocerebral bridge'],
 #         protocerebral_bridge,

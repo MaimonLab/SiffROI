@@ -1,73 +1,104 @@
 # Code for ROI extraction from the fan-shaped body after manual input
-from typing import Any
+from typing import Any, Optional, TYPE_CHECKING
 import numpy as np
 
+from ...roi import ViewDirection
 from ..rois.fan import Fan
 from ...roi_protocol import ROIProtocol
-#from siffpy.siffroi.roi_protocols.utils import PolygonSource
+from ...utils import nth_largest_shape_in_list
+from ...utils.mixins import (
+    UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, ExpectsShapesMixin
+)
+if TYPE_CHECKING:
+    from ...utils.types import (
+        MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
+    )
 
-class OutlineFan(ROIProtocol):
+
+class OutlineFan(
+    ExpectsShapesMixin,
+    UsesAnatomyReferenceMixin,
+    UsesReferenceFramesMixin,
+    ROIProtocol
+    ):
 
     name = "Outline fan"
     base_roi_text = "Extract fan"
 
+    SHAPE_TYPE = "polygon"
+    ANATOMY_REFERENCE_SHAPE_TYPE = "line"
+
+    extraction_arg_list = [
+        "view_direction"
+    ]
+
     def extract(
-            self,
-            reference_frames : np.ndarray,
-            polygon_source : Any,
-            slice_idx : int = 0,
+        self,
+        reference_frames : 'ReferenceFrames',
+        anatomy_reference : 'AnatomyReference',
+        shapes : list[np.ndarray],
+        slice_idx : int = None,
+        view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     )-> Fan:
+        image_shape = reference_frames.shape
         return outline_fan(
-            reference_frames,
-            polygon_source,
+            shapes,
+            anatomy_reference,
+            image_shape,
+            view_direction=view_direction,
             slice_idx=slice_idx,
         )
 
     def segment(self):
         raise NotImplementedError()
 
-def outline_fan(reference_frames : list, polygon_source : Any, *args, slice_idx : int = None, **kwargs)-> Fan:
+def outline_fan(
+        polygons : list[np.ndarray],
+        anatomy_reference : 'AnatomyReference',
+        image_shape : tuple[int],
+        view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+        slice_idx : Optional[int] = -1,
+        **kwargs
+    )-> Fan:
     """
     Takes the largest ROI and assumes it's the outline of the fan-shaped body.
 
-    Optionally looks for two lines to define the edges of the fan for a triangle-based
-    segmentation of columns.
-
-    Parameters
-    ----------
-
-    reference_frames : list of numpy arrays
-
-        The siffreader reference frames to overlay
-
-    polygon_source : PolygonSource
-
-        Backend-invariant polygon source representation
-
-    slice_idx : None, int, or list of ints (optional)
-
-        Which slice or slices to extract an ROI for. If None, will take the ROI
-        corresponding to the largest polygon across all slices.
     """
-    ## Outline:
-    #
-    #   Just takes the largest polygon and assumes it's fan shaped.
-    #
-    #   Also looks to see if there's a pair of lines that can be used to guide
-    #   segmentation, and if so adds that info to the Fan object produced.
+    FROM_MASK = False
+    slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
+    if len(polygons) == 0:
+        raise ValueError("No suitable polygons provided")
     
-    largest_polygon, slice_idx, _ = polygon_source.get_largest_polygon(slice_idx = slice_idx)
-    source_image = polygon_source.source_image(slice_idx)
-    fan_lines = None
-    try:
-        fan_lines = polygon_source.get_largest_lines(slice_idx = slice_idx, n_lines = 2)
-    except NotImplementedError:
-        pass
+    if all([polygon.dtype == bool for polygon in polygons]):
+        # If we have a boolean mask, we can just use that as the
+        # and bypass the hullabaloo below
+        FROM_MASK = True
+
+    main_fan = nth_largest_shape_in_list(
+        polygons,
+        n = 1,
+        slice_idx = slice_idx,
+        image_shape = image_shape,
+    )
+
+    orientation = 0.0
+
+    if not (anatomy_reference is None) and (len(anatomy_reference) > 0):
+        if isinstance(anatomy_reference, (tuple,list)):
+            anatomy_reference = anatomy_reference[0]
+        # Goes postero-dorsal to antero-ventral
+        start_pt = anatomy_reference[0][-2:] # y, x
+        end_pt = anatomy_reference[1][-2:] # y, x
+        # dx + i*dy in SCREEN coordinates
+        start_to_end = (end_pt[-1] - start_pt[-1]) - 1j*(end_pt[0] - start_pt[0])
+        orientation += np.angle(1j*start_to_end)
+        # I always find geometry with complex numbers much easier than using tangents etc.
 
     return Fan(
-        largest_polygon,
+        mask = main_fan if FROM_MASK else None,
+        polygon = None if FROM_MASK else main_fan,
+        image_shape = image_shape,
         slice_idx = slice_idx,
-        image = source_image,
-        fan_lines=fan_lines,
-        name = 'Fan-shaped body',
+        orientation = orientation,
+        view_direction = view_direction,
     )

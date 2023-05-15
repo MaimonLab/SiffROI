@@ -1,10 +1,13 @@
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING, Optional
+
 import numpy as np
-from scipy.stats import circmean
-import logging
+from scipy.ndimage import center_of_mass
 
 from ...roi import ROI, subROI, ViewDirection
+
+if TYPE_CHECKING:
+    from ...utils.types import MaskLike, PolygonLike, ImageShapeLike
 
 class FanSegmentationMethod(Enum):
     TRIANGLES = "triangles"
@@ -12,81 +15,56 @@ class FanSegmentationMethod(Enum):
 
 class Fan(ROI):
     """
-    Fan-shaped ROI
+    Fan-shaped ROI.
 
-    ........
-
-    Attributes
-    ----------
-
-    polygon        : hv.element.path.Polygons
-
-        A HoloViews Polygon representing the region of interest.
-
-    slice_idx      : int
-
-        Integer reference to the z-slice that the source polygon was drawn on.
-
-    bounding_paths : hv.element.path.Path or list[tuple[hv.element.path.Path, int, int] (optional)
-
-        Lines that define the outer edges of the fan-shaped body (to be divided angularly).
-        If not a Path element itself, expected to be a tuple, where
-        the first element is the holoviews Path element, the second is a slice index, and the
-        third is an unimportant roi_idx that is ignored for this 
-
-    .......
-
-    Methods
-    ------------
-
-    compute midline() -> None
-
-        Not yet implemented 
-
-    segment(n_segments) -> None
-
-        Not yet implemented
-
-    get_roi_masks(image) -> list[np.ndarray]
-
-        Returns a list (or np.ndarray) of the masks for all wedge parameters (if they exist)
+    Orientation refers to how the fan must be
+    rotated in order for the posterior fan-shaped
+    body to point DOWN (in IMAGE coordinates not x,y).
     """
+
+    SAVE_ATTRS = [
+        'view_direction',
+        'orientation',
+    ]
 
     def __init__(
             self,
-            polygon : Any,
-            slice_idx : int = None,
-            bounding_paths : list[Any] = None,
+            mask: 'MaskLike' = None,
+            polygon: 'PolygonLike' = None,
+            image_shape: 'ImageShapeLike' = None,
+            slice_idx: Optional[int] = None,
+            orientation : Optional[float] = 0.0,
+            view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
             **kwargs
         ):
+        if not "name" in kwargs:
+            kwargs["name"] = "Fan"
+        super().__init__(
+            mask=mask,
+            polygon=polygon,
+            image_shape=image_shape,
+            slice_idx=slice_idx,
+            **kwargs
+        )
+        self.orientation = orientation
+        self.view_direction = view_direction
 
-        # if not isinstance(polygon, hv.element.path.Polygons):
-        #     raise ValueError("Fan ROI must be initialized with a polygon")
-        super().__init__(polygon, slice_idx = slice_idx, **kwargs)
-        self.plotting_opts = {}
-
-        # if not bounding_paths is None:
-        #     if not all(
-        #         map(
-        #             lambda x: ((type(x) is hv.element.path.Path) or type(x[0]) is hv.element.path.Path),
-        #             bounding_paths
-        #         )
-        #     ):
-        #         raise ValueError("At least one provided bounding path is not a holoviews path or a tuple containing a path as its first element.")
-        #     self.bounding_paths = bounding_paths
-
-        if not self._image is None:
-            x_ratio = np.ptp(polygon.data[0]['x'])/self._image.shape[1] # ptp is peak-to-peak
-            y_ratio = np.ptp(polygon.data[0]['y'])/self._image.shape[0]
-            if y_ratio > x_ratio:
-                self.long_axis = 'x'
-            else:
-                self.long_axis = 'y'
-        else:
-            # Making an assumption later. Maybe I'll make things programmatically
-            # look out for this?
-            self.long_axis = None
-
+    @property
+    def columns(self)->list['Column']:
+        """
+        Returns the columns of the Fan as a list of Column objects.
+        """
+        return self.subROIs
+    
+    @property
+    def mask(self)->np.ndarray:
+        """
+        Returns the mask of the Fan as a numpy array.
+        """
+        if not (self._mask is None):
+            return self._mask
+        raise NotImplementedError("Fan mask from polygon not yet implemented")
+    
     def segment(self,
         n_segments : int = 8,
         method : FanSegmentationMethod = FanSegmentationMethod.TRIANGLES,
@@ -131,132 +109,21 @@ class Fan(ROI):
         Stores segments as .columns, which are a subROI class
         TODO: implement
         """
+        method = FanSegmentationMethod(method)
 
-        if not ((type(method) is str) or isinstance(method, FanSegmentationMethod)):
-            raise ValueError(f"Keyword argument method must be of type string, not type {type(method)}")
-
-        if (method is FanSegmentationMethod.TRIANGLES) or (method == 'triangles'):
-            if not hasattr(self, 'bounding_paths'):
-                raise NotImplementedError("Fan must have bounding paths to use triangle method of segmenting into columns.")
-            self._fit_triangles(n_segments, viewed_from)
-            return
+        if method is FanSegmentationMethod.TRIANGLES:
+            self.subROIs = fit_triangles(self.mask, self.orientation, n_segments, viewed_from)
             
-        if (method is FanSegmentationMethod.MIDLINE) or (method == 'midline'):
+        if method is FanSegmentationMethod.MIDLINE:
             raise NotImplementedError("Haven't implemented the midline method of segmenting into columns.")
             
 
         raise ValueError(f"Keyword argument {method} provided for method is not a valid method name.")
 
         
-    def find_midline(self)->None:
-        """
-        Returns a midline through the fan-shaped body if at least two points
-        are defined on the edge of the ROI. Uses ??? method
-        """
-        if not hasattr(self, 'selected_points'):
-            raise AttributeError(f"No points selected on ROI \n{self}")
 
-        if len(self.selected_points) > 2:
-            logging.warn(f"More than two points selected on ROI. Using last two defined. ROI:\n{self}")
-        
-        if len(self.selected_points) < 2:
-            raise RuntimeError(f"Fewer than two points defined on ROI:\n{self}")
-
-
-        raise NotImplementedError()
-
-    def _fit_triangles(self, n_segments, viewed_from)-> list['Fan.TriangleColumn']:
-        """
-        Private method to fit triangle subROIs to the Fan.
-
-        n_segments : int
-
-            Number of segments produced in the end
-
-        viewed_from : str
-
-            Determines whether the left of the image
-            is the fly's left or right. The subROIs are
-            ordered from fly's left to fly's right, anatomically
-            so this actually does matter.
-
-            Options:
-
-                - 'anterior'
-                - 'posterior'
-        """
-        if isinstance(viewed_from, ViewDirection):
-            viewed_from = viewed_from.value
-        raise NotImplementedError()
-        ## Outline
-        #
-        # 1) Take two lines, extend them to their intersection
-        #
-        # 2) Compute the angle between the lines and divide it
-        # into n_segments number of sub-angles
-        #
-        # 3) Figure out of those angles should go from the left
-        # of the image to the right of the image, or vice versa,
-        # based on which way is anatomical left
-        #
-        # 4) Compute the directions of each ray emanating from the
-        # point of intersection, and use those to compute triangles
-        # intersect the Fan's polygon
-
-        ### First find the point of intersection
-
-        # # start by extracting the bounding paths as hv.Paths
-        # paths = [path if type(path) == hv.Path else path[0] for path in self.bounding_paths]
-
-        # intersection = intersection_of_two_lines(*paths) # returns (x, y), not (y, x)!
-
-        # ### Find the angle swept out by the paths (using the dot product)        
-        
-        # # find vector pointing from intersect to each path
-        # vectors = [vector_pointing_along_path(path, intersection) for path in paths]
-        
-        # # The left edge is determined by whether you're facing anterior or posterior
-        # if viewed_from == ViewDirection.ANTERIOR.value:
-        #     # The left edge is closest to the x axis (arctan is close to 0)
-        #     left_edge = vectors[np.argmin([np.abs(np.arctan2(*vector[::-1])) for vector in vectors])]
-        # if viewed_from == ViewDirection.POSTERIOR.value:
-        #     # The left edge is closest to the negative x-axis (arctan is close to +/- pi)
-        #     left_edge = vectors[np.argmax([np.abs(np.arctan2(*vector[::-1])) for vector in vectors])]
-
-        # # Take the dot product of the two, divide by the magnitude of the vectors
-        # # that gives cos(angle)
-        # swept_angle = angle_between(*vectors)
-        
-        # # from the anterior, it rotates with NEGATIVE theta
-        # if viewed_from == ViewDirection.ANTERIOR.value:
-        #     swept_angle *= -1.0
-
-        # rotation_angles = np.linspace(0,swept_angle, n_segments+1) # the bounds for each segment
-
-        # # vectors oriented in the direction of each bounding path
-        # bounding_directions = [np.dot(rotation_matrix(angle), left_edge) for angle in rotation_angles]
-        # paired_bounds = pairwise(bounding_directions) # pair them up, (vec1, vec2), (vec2, vec3), ...
-        # paired_bounding_angles = pairwise(np.linspace(0, 2*np.pi, n_segments+1)) # these are nominal, span 0 to 2pi
-
-        # self.columns = [
-        #     Fan.TriangleColumn(self, bound_vec, bound_ang, intersection, slice_idx = self.slice_idx, image=self.image)
-        #     for (bound_vec, bound_ang) in zip(paired_bounds,paired_bounding_angles)
-        # ]
-
-        # colorwheel = colorcet.colorwheel
-
-        # idx = 0
-        # for column in self.columns:
-        #     column.plotting_opts['fill_color'] = colorwheel[idx * int(len(colorwheel)/len(self.columns))]
-        #     column.plotting_opts['fill_alpha'] = 0.3
-        #     idx += 1
-
-    @property
-    def _subROIs(self):
-        """
-        Returns the subROIs of the Fan
-        """
-        return self.columns
+    def __str__(self)->str:
+        return self.__repr__()
 
     def __repr__(self)->str:
         """
@@ -275,19 +142,25 @@ class Fan(ROI):
 
         return ret_str
 
-    class TriangleColumn(subROI):
+class Column(subROI):
         """
         Local class for Fan ROI. Defines a type of subROI in which
         the Fan is divided into triangles of equal angular width
         through the Fan. Generated by the segmentation method 'triangles'.
         """
 
-        def __init__(self,
-                fan : 'Fan',
-                bounding_vectors : tuple[np.ndarray],
-                bounding_angles : tuple[float, float],
-                intersection_point : tuple[float, float],
-                slice_idx : int = None,
+        SAVE_ATTRS = [
+            'phase',
+        ]
+
+        def __init__(
+                self,
+                mask : 'MaskLike' = None,
+                polygon : 'PolygonLike' = None,
+                image_shape : 'ImageShapeLike' = None,
+                phase : Optional[float] = None,
+                slice_idx : Optional[int] = None,
+                view_direction : ViewDirection = ViewDirection.ANTERIOR,
                 **kwargs
             ):
             """
@@ -299,21 +172,16 @@ class Fan(ROI):
             Accepts all kwargs of the subROI class.
             """
 
-            super().__init__(self, **kwargs)
+            super().__init__(
+                mask=mask,
+                polygon=polygon,
+                image_shape=image_shape,
+                slice_idx=slice_idx, 
+                **kwargs
+            )
 
-            self.bounding_vectors = bounding_vectors
-            self.bounding_angles = bounding_angles
-            self.intersection_point = intersection_point
-            self.slice_idx = slice_idx
-
-            self.polygon = polygon_bounded_by_rays(fan.polygon, self.bounding_vectors, self.intersection_point)
-
-        def visualize(self):
-            return self.polygon.opts(**self.plotting_opts)
-
-        @property
-        def angle(self):
-            return circmean(self.bounding_angles)
+            self.phase = phase,
+            self.view_direction = view_direction
 
         def __repr__(self):
             """
@@ -321,7 +189,98 @@ class Fan(ROI):
             """
             ret_str = "ROI of class TriangleColumn of a Fan\n\n"
             ret_str += f"\tCentered at {self.center()}\n"
-            ret_str += f"\tOccupies angles in range {self.bounding_angles}\n"
-            ret_str += f"Custom plotting options: {self.plotting_opts}\n"
+            ret_str += f"With phase {'(unknown)' if self.phase is None else self.phase}\n"
 
             return ret_str
+
+def fit_triangles(
+    mask : 'MaskLike',
+    orientation : float,
+    n_segments : int,
+    viewed_from : ViewDirection = ViewDirection.ANTERIOR
+    )->list[Column]:
+    """
+    Takes a mask and the bounding paths of a Fan and divides
+    it angularly in n_segments wedges extending from the intersection
+    of the bounding_paths. Returns a list of Column objects.
+    """
+
+    def single_segmentation(
+        slice_mask : np.ndarray,
+        orientation : float = 0.0,
+        n_segments : int = 8,
+        view_direction : ViewDirection = ViewDirection.ANTERIOR
+    )->list[np.ndarray]:
+        """
+        Find the centroid of a plane's mask, move along the 'orientation' axis
+        until you find the most downward point, and then divide the plane into
+        n_segments wedges extending from the centroid to the most downward point.
+
+        Returns a list of n_segment masks
+        """
+        if not np.any(slice_mask):
+            return [np.zeros_like(slice_mask) for _ in range(n_segments)]
+        centroid = center_of_mass(slice_mask)
+
+        cplx_centroid = -centroid[0]*1j + centroid[1]
+
+        grid_yy, grid_xx = np.meshgrid(*(np.arange(dim) for dim in slice_mask.shape), indexing = 'ij')
+        cplx_mask = cplx_centroid - (grid_xx - 1j*grid_yy)
+        cplx_mask = cplx_mask
+
+        most_downward_along_orientation = np.unravel_index(
+            np.argmax(
+                np.imag(cplx_mask*np.exp(-1j*orientation))*slice_mask # rotate along orientation axis
+            ),
+            slice_mask.shape
+        )
+
+        most_downward_point = grid_xx[most_downward_along_orientation] - 1j*grid_yy[most_downward_along_orientation]
+
+        hub_point = (
+            np.real(cplx_centroid*np.exp(-1j*orientation)) +
+            np.imag(most_downward_point*np.exp(-1j*orientation))*1j
+        )*np.exp(1j*orientation)
+
+        new_grid = (grid_xx - 1j*grid_yy - hub_point)*np.exp(1j*orientation)
+        angles = -np.angle(new_grid)*slice_mask
+        if ViewDirection(view_direction) == ViewDirection.POSTERIOR:
+            angles = -angles
+        angle_range = angles.min(), angles.max()
+        angle_boundaries = np.linspace(*angle_range, n_segments + 1, endpoint = True)
+
+        masks = [
+            np.logical_and(
+                (angles >= lb) *
+                (angles < ub),
+                slice_mask
+            )
+            for lb, ub in zip(angle_boundaries[:-1], angle_boundaries[1:])
+        ]
+        return masks
+    
+    masks = np.array([
+        single_segmentation(
+            slice_mask,
+            orientation = orientation,
+            n_segments = n_segments,
+            view_direction = viewed_from
+        )
+        for slice_mask in mask
+    ]).sum(axis=1)
+
+    phases = np.linspace(
+        0, 2*np.pi, n_segments, endpoint=False
+    )
+
+    return [
+        Column(
+            mask = mask,
+            polygon = None,
+            image_shape = mask.shape,
+            phase = phase,
+            slice_idx = None,
+            view_direction = viewed_from,
+        )
+        for mask, phase in zip(masks, phases)
+    ]

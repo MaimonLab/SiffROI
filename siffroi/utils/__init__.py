@@ -7,7 +7,7 @@ These geometries are all (x,y) not (y,x) the way images are.
 
 SCT Dec 29 2021
 """
-from typing import Iterable, Union
+from typing import Iterable, Optional
 
 from matplotlib.path import Path as mplPath
 from matplotlib.pyplot import get_cmap
@@ -35,6 +35,71 @@ def masks_to_rgba(labeled_image_mask : np.ndarray, cmap_str : str = 'hsv')->np.n
     )
     return rgba
 
+def nth_largest_shape_in_list(
+        shapes : list[np.ndarray],
+        n : int = 1,
+        slice_idx : Optional[int] = None,
+        image_shape : Optional[tuple[int]] = None,
+    )->np.ndarray:
+    """
+    Selects the nth largest shape in the provided list. Accepts either a list of
+    masks (arrays of type bool) or a list of vertices (arrays of points of type float or int)
+    """
+
+    FROM_MASK = False
+    slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
+    if len(shapes) == 0:
+        raise ValueError("No suitable shapes provided")
+    
+    if all([shape.dtype == bool for shape in shapes]):
+        # If we have a boolean mask, we can just use that as the
+        # and bypass the hullabaloo below
+        FROM_MASK = True
+
+    if slice_idx is None:
+        # Get the biggest for all planes
+        if FROM_MASK:
+            shapes_by_slice = [
+                [shape for shape in shapes if np.any(shape[slice_idx])]
+                for slice_idx in range(image_shape[0])
+            ]
+
+            slicewise_idx = [
+                np.argsort([np.sum(shape) for shape in slicewise_shapes])
+                if len(slicewise_shapes) > 0
+                else None
+                for slicewise_shapes in shapes_by_slice
+            ]
+
+            slicewise_biggest_shape = [
+                slicewise_shapes[sorted_slicewise[-n]]
+                if sorted_slicewise is not None
+                else np.zeros(image_shape, dtype=bool)
+                for slicewise_shapes, sorted_slicewise in zip(shapes_by_slice, slicewise_idx)
+            ]
+
+            main_shape = np.logical_or.reduce(slicewise_biggest_shape)
+            
+        else:
+            raise NotImplementedError("ROI functionality only supports masks for now")
+
+    else:
+        size_sorted_idx = np.argsort(
+            [
+                np.sum(shape)
+                for shape in shapes
+                if np.round(shape[0][0]) == slice_idx
+            ]
+        ) if FROM_MASK else np.argsort(
+            [
+                polygon_area(shape)
+                for shape in shapes
+                if np.round(shape[0][0]) == slice_idx
+            ]
+        )
+
+        main_shape = shapes[size_sorted_idx[-n]]
+    return main_shape
 
 def polygon_to_mask(polygon, image_shape : tuple[int,int]) -> np.ndarray:
     """
