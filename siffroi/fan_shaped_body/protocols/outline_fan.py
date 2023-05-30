@@ -1,5 +1,5 @@
 # Code for ROI extraction from the fan-shaped body after manual input
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Optional
 import numpy as np
 
 from ...roi import ViewDirection
@@ -9,10 +9,9 @@ from ...utils import nth_largest_shape_in_list
 from ...utils.mixins import (
     UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, ExpectsShapesMixin
 )
-if TYPE_CHECKING:
-    from ...utils.types import (
-        MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
-    )
+from ...utils.types import (
+    MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
+)
 
 
 class OutlineFan(
@@ -34,11 +33,11 @@ class OutlineFan(
 
     def extract(
         self,
-        reference_frames : 'ReferenceFrames',
-        anatomy_reference : 'AnatomyReference',
+        reference_frames : ReferenceFrames,
+        anatomy_reference : AnatomyReference,
         shapes : list[np.ndarray],
-        slice_idx : int = None,
-        view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+        slice_idx : Optional[int] = None,
+        view_direction : ViewDirection = ViewDirection.ANTERIOR,
     )-> Fan:
         image_shape = reference_frames.shape
         return outline_fan(
@@ -54,9 +53,9 @@ class OutlineFan(
 
 def outline_fan(
         polygons : list[np.ndarray],
-        anatomy_reference : 'AnatomyReference',
+        anatomy_reference : AnatomyReference,
         image_shape : tuple[int],
-        view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+        view_direction : ViewDirection = ViewDirection.ANTERIOR,
         slice_idx : Optional[int] = -1,
         **kwargs
     )-> Fan:

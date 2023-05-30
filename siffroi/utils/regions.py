@@ -31,7 +31,7 @@ class Region():
         )
     
     @property
-    def default_protocol(self)->ROIProtocol:
+    def default_protocol(self)->'ROIProtocol':
         return next(
             protocol for protocol in self.protocols
             if protocol.name == self.default_fcn_str

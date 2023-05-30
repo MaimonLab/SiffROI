@@ -2,7 +2,6 @@
 
 # Relies on my separate fourcorr module
 from typing import Any, TYPE_CHECKING
-import numpy as np
 
 import fourcorr
 
@@ -14,11 +13,12 @@ from ...utils.mixins import (
 )
 from ...utils.mixins.napari import ExtractionWithCallback
 
+from ...utils.types import (
+    ReferenceFrames, FrameData
+)
+
 if TYPE_CHECKING:
-    from ...utils.types import (
-        ReferenceFrames, FrameData
-    )
-    from fourcorr.napari.correlation import CorrelationWindow
+    from fourcorr import FourCorrAnalysis
 
 class FitVonMises(
     UsesFrameDataMixin,
@@ -34,12 +34,13 @@ class FitVonMises(
             self,
             frame_data : 'FrameData',
             reference_frames : 'ReferenceFrames',
-            view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+            view_direction : ViewDirection = ViewDirection.POSTERIOR,
     )->GlobularMustache:
         """
         Returns a GlobularMustache ROI made up of the individual
         masks extracted by correlating every pixel to the source ROIs
         """
+        view_direction = ViewDirection(view_direction)
         fca = fourcorr.FourCorrAnalysis(
             frames = frame_data,
             annotation_images = reference_frames,
@@ -48,9 +49,11 @@ class FitVonMises(
         fca.done_clicked.connect(lambda x: self.fca_to_pb(x, view_direction))
         return self.events.extracted
 
-    def fca_to_pb(self, event : Any, view_direction : 'ViewDirection'):
-        corr_window : CorrelationWindow = event.source
+    def fca_to_pb(self, event : Any, view_direction : ViewDirection):
+        corr_window : 'FourCorrAnalysis' = event.source
         glomeruli = corr_window.masks
+
+        #TODO: figure out the right phases!
         self.roi = GlobularMustache(
             globular_glomeruli_masks = glomeruli,
             view_direction=view_direction,

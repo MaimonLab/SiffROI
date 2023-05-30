@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from inspect import Parameter, signature
-from typing import Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from .utils.types import ReferenceFrames, AnatomyReference, FrameData
 from .utils.mixins import (
@@ -22,17 +22,10 @@ class ROIProtocol(ABC):
     of a protocol and limited how things
     could be formatted. But these get more complicated
     and you basically have to do the type-hinting yourself...
-
-    NOTE: ALL EXTRACTION METHODS USING REFERENCE FRAMES, FRAME DATA, OR
-    ANATOMY REFERENCE SHOULD BE IN THE ORDER:
-    - FRAME_DATA
-    - REFERENCE_FRAMES
-    - ANATOMY_REFERENCE
     """
 
     name : str = "ROI Protocol superclass"
     base_roi_text : str = "Extract base ROI"
-    on_extraction : Callable = None
     extraction_arg_list: list[str] = []
 
     @abstractmethod

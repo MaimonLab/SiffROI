@@ -37,7 +37,7 @@ class UseEllipse(
         reference_frames : 'ReferenceFrames',
         anatomy_reference : 'AnatomyReference',
         shapes : list[np.ndarray],
-        slice_idx : int = None,
+        slice_idx : Optional[int] = None,
         extra_rois : 'ExtraRois' = ExtraRois.CENTER,
         view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     )->Ellipse: 

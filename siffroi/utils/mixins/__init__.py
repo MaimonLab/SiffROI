@@ -1,8 +1,10 @@
 """ ROI PROTOCOL MIXINS """
-
+from typing import Any
 
 
 class UsesFrameDataMixin():
+
+    extraction_args : dict[str, Any]
 
     @property
     def frame_data_arg_num(self)->int:
@@ -14,7 +16,8 @@ class UsesReferenceFramesMixin():
     UsesReferenceFrames means it uses the reference frames layer,
     possibly in addition to the raw data layer
     """
-    
+    extraction_args : dict[str, Any]
+ 
     @property
     def reference_frames_arg_num(self)->int:
         """ Returns the position of the reference_frames argument in the extraction function """
@@ -22,6 +25,7 @@ class UsesReferenceFramesMixin():
 
 class UsesAnatomyReferenceMixin():
 
+    extraction_args : dict[str, Any]
     ANATOMY_REFERENCE_SHAPE_TYPE : str = "any"
 
     @property
@@ -36,7 +40,7 @@ class ExpectsShapesMixin():
     SHAPE_TYPE class attribute can specify the type used. Should be a
     `napari` style string
     """
-
+    extraction_args : dict[str, Any]
     SHAPE_TYPE : str = "any"
     @property
     def shape_arg_num(self)->int:

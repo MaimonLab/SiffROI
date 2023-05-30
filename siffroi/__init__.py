@@ -1,13 +1,15 @@
-import re
-import logging
-import inspect, textwrap
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .roi_protocol import ROIProtocol
 from .roi import ROI
 from .utils.regions import RegionEnum, Region
-from . import ellipsoid_body, fan_shaped_body # protocerebral_brdge, noduli, generic
+from . import ellipsoid_body, fan_shaped_body, protocerebral_bridge#, noduli, generic
 
 from ._version import __version__, version, version_tuple, __version_tuple__
+
+if TYPE_CHECKING:
+    from .utils.types import PathLike
 
 REGIONS = [
     Region(
@@ -24,12 +26,12 @@ REGIONS = [
         RegionEnum.FAN_SHAPED_BODY
     ),
     
-#     Region(
-#         ['pb','pcb','protocerebral bridge','bridge', 'Protocerebral bridge'],
-#         protocerebral_bridge,
-#         'Fit von Mises',
-#         RegionEnum.PROTOCEREBRAL_BRIDGE
-#     ),
+    Region(
+        ['pb','pcb','protocerebral bridge','bridge', 'Protocerebral bridge'],
+        protocerebral_bridge,
+        'Fit von Mises',
+        RegionEnum.PROTOCEREBRAL_BRIDGE
+    ),
 #     Region(
 #         ['no','noduli','nodulus','nod', 'Noduli'],
 #         noduli,
@@ -43,6 +45,12 @@ REGIONS = [
 #         RegionEnum.GENERIC
 #     )
 ]
+
+def load_rois(path : 'PathLike')->list['ROI']:
+    path = Path(path)
+    return [ROI.load(roipath) for roipath in path.rglob('*.h5roi')]
+
+
 
 # # Default method for each brain region of interest
 # # Written this way so I can use the same names for

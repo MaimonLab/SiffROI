@@ -314,7 +314,7 @@ class ROI():
         """
         load_path = Path(load_path)
 
-        with h5File(load_path, 'r') as f:
+        with h5File(load_path.with_suffix('.h5roi'), 'r') as f:
             try:
                 mod = importlib.import_module(f.attrs['module'])
                 cls = getattr(mod, f.attrs['class'])

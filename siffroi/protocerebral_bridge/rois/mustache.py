@@ -1,12 +1,10 @@
-from typing import Any, TYPE_CHECKING, Optional
-from functools import reduce
+from typing import Optional
 
 import numpy as np
 
 from ...roi import ROI, subROI
-if TYPE_CHECKING:
-    from ...utils.types import MaskLike, PolygonLike, ImageShapeLike
-    from ...roi import ViewDirection
+from ...utils.types import MaskLike, PolygonLike, ImageShapeLike
+from ...roi import ViewDirection
 
 class GlobularMustache(ROI):
     """
@@ -19,14 +17,14 @@ class GlobularMustache(ROI):
 
     def __init__(
         self,
-        mask : 'MaskLike' = None,
-        polygon: 'PolygonLike' = None,
-        image_shape : 'ImageShapeLike' = None,
-        name: str = None,
-        slice_idx: int = None,
+        mask : MaskLike = None,
+        polygon: PolygonLike = None,
+        image_shape : ImageShapeLike = None,
+        name: Optional[str] = None,
+        slice_idx: Optional[int] = None,
         globular_glomeruli_masks: Optional[list[np.ndarray]] = None,
         phases : Optional[list[Optional[float]]] = None,
-        view_direction : Optional[ViewDirection] = ViewDirection.POSTERIOR,
+        view_direction : ViewDirection = ViewDirection.POSTERIOR,
     ):
         
         if phases is None:
@@ -56,9 +54,6 @@ class GlobularMustache(ROI):
 
         self.view_direction = view_direction
     
-    def mask(self, image : np.ndarray = None)->np.ndarray:
-        return reduce(np.logical_or, [glom.mask(image) for glom in self.glomeruli])
-
     def segment(self) -> None:
         """
         Does nothing : this class is initialized with the glomeruli!
@@ -80,12 +75,12 @@ class GlobularMustache(ROI):
 
         def __init__(
             self,
-            mask : 'MaskLike' = None,
-            polygon: 'PolygonLike' = None,
-            image_shape : 'ImageShapeLike' = None,
-            name: str = None,
-            slice_idx: int = None,
-            pseudophase : float = None,
+            mask : MaskLike = None,
+            polygon: PolygonLike = None,
+            image_shape : ImageShapeLike = None,
+            name: Optional[str] = None,
+            slice_idx: Optional[int] = None,
+            pseudophase : Optional[float] = None,
         ):
             super().__init__(
                 mask = mask,
