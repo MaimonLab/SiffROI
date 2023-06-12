@@ -36,6 +36,7 @@ class OutlineFan(
         reference_frames : ReferenceFrames,
         anatomy_reference : AnatomyReference,
         shapes : list[np.ndarray],
+        roi_name : str = "Fan",
         slice_idx : Optional[int] = None,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
     )-> Fan:
@@ -44,6 +45,7 @@ class OutlineFan(
             shapes,
             anatomy_reference,
             image_shape,
+            roi_name = roi_name,
             view_direction=view_direction,
             slice_idx=slice_idx,
         )
@@ -55,6 +57,7 @@ def outline_fan(
         polygons : list[np.ndarray],
         anatomy_reference : AnatomyReference,
         image_shape : tuple[int],
+        roi_name = "Fan",
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
         slice_idx : Optional[int] = -1,
         **kwargs
@@ -98,6 +101,7 @@ def outline_fan(
         polygon = None if FROM_MASK else main_fan,
         image_shape = image_shape,
         slice_idx = slice_idx,
+        name = roi_name,
         orientation = orientation,
         view_direction = view_direction,
     )

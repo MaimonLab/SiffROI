@@ -35,6 +35,7 @@ class FitVonMises(
             frame_data : 'FrameData',
             reference_frames : 'ReferenceFrames',
             view_direction : ViewDirection = ViewDirection.POSTERIOR,
+            roi_name : str = "Protocerebral bridge",
     )->GlobularMustache:
         """
         Returns a GlobularMustache ROI made up of the individual
@@ -46,10 +47,18 @@ class FitVonMises(
             annotation_images = reference_frames,
         )
 
-        fca.done_clicked.connect(lambda x: self.fca_to_pb(x, view_direction))
-        return self.events.extracted
+        fca.done_clicked.connect(
+            lambda x: self.fca_to_pb(
+                    x, view_direction, roi_name=roi_name
+                )
+            )
 
-    def fca_to_pb(self, event : Any, view_direction : ViewDirection):
+    def fca_to_pb(
+            self,
+            event : Any,
+            view_direction : ViewDirection,
+            roi_name : str = "Protocerebral bridge",
+        ):
         corr_window : 'FourCorrAnalysis' = event.source
         glomeruli = corr_window.masks
 
@@ -57,5 +66,6 @@ class FitVonMises(
         self.roi = GlobularMustache(
             globular_glomeruli_masks = glomeruli,
             view_direction=view_direction,
+            name = roi_name,
         )
         self.events.extracted()
