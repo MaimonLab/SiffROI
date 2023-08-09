@@ -42,7 +42,7 @@ REGIONS = [
 #         RegionEnum.NODULI
 #     ),
     Region(
-        ['generic'],
+        ['generic', 'Generic'],
         generic,
         'Generic ROI',
         RegionEnum.GENERIC

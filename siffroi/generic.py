@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from .roi_protocol import ROIProtocol
-from .utils.mixins import UsesReferenceFramesMixin
+from .utils.mixins import UsesReferenceFramesMixin, ExpectsShapesMixin
 from .utils import nth_largest_shape_in_list
 from .roi import ROI
 
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class GenericRoi(
     UsesReferenceFramesMixin,
+    ExpectsShapesMixin,
     ROIProtocol
     ):
     name = "Generic ROI"
