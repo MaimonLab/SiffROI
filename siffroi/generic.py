@@ -18,7 +18,7 @@ class GenericRoi(
     ROIProtocol
     ):
     name = "Generic ROI"
-    base_roi_text = "Save ROI"
+    base_roi_text = "Extract ROI"
     
     SHAPE_TYPE = 'polygon'
 
