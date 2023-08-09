@@ -1,35 +1,59 @@
-# Code for ROI extraction from the fan-shaped body after manual input
+# Code for ROI extraction from a generic polygon
 
-from .rois import ROI
+from typing import TYPE_CHECKING, Optional
 
-def outline_roi(reference_frames : list, *args, slice_idx : int = None, **kwargs)-> ROI:
-    """
-    Takes the largest ROI and assumes it's the outline of the ROI of interest.
+import numpy as np
 
-    Parameters
-    ----------
+from .roi_protocol import ROIProtocol
+from .utils.mixins import UsesReferenceFramesMixin
+from .utils import nth_largest_shape_in_list
+from .roi import ROI
 
-    reference_frames : list of numpy arrays
+if TYPE_CHECKING:
+    from .utils.types import ReferenceFrames
 
-        The siffreader reference frames to overlay
-
-    polygon_source : PolygonSource
-
-        Backend-invariant polygon source representation
-
-    slice_idx : None, int, or list of ints (optional)
-
-        Which slice or slices to extract an ROI for. If None, will take the ROI
-        corresponding to the largest polygon across all slices.
-    """
+class GenericRoi(
+    UsesReferenceFramesMixin,
+    ROIProtocol
+    ):
+    name = "Generic ROI"
+    base_roi_text = "Save ROI"
     
-    largest_polygon, slice_idx, _ = polygon_source.get_largest_polygon(slice_idx = slice_idx)
-    source_image = polygon_source.source_image(slice_idx)
-    return ROI(
-        largest_polygon,
-        slice_idx = slice_idx,
-        image = source_image
-    )
+    SHAPE_TYPE = 'polygon'
 
-def dummy_method(*args, **kwargs):
-    print("I'm just a placeholder!")
+    def extract(
+        self,
+        reference_frames : 'ReferenceFrames',
+        shapes : list[np.ndarray],
+        roi_name : str = 'ROI',
+        slice_idx : Optional[int] = None,
+    )->ROI:
+        """ Returns a single ROI from a polygon or set of polygons drawn by the user """
+        
+        FROM_MASK = False
+
+        slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
+        
+        if len(shapes) == 0:
+            raise ValueError("No suitable polygons provided")
+        
+        if all([polygon.dtype == bool for polygon in shapes]):
+            # If we have a boolean mask, we can just use that as the
+            # and bypass the hullabaloo below
+            FROM_MASK = True
+
+        main_roi = nth_largest_shape_in_list(
+            shapes,
+            n = 1,
+            slice_idx = slice_idx,
+            image_shape = reference_frames.shape,
+        )
+
+        return ROI(
+            mask = main_roi if FROM_MASK else None,
+            polygon = None if FROM_MASK else main_roi,
+            image_shape = reference_frames.shape,
+            slice_idx = slice_idx,
+            name = roi_name,
+        )
+

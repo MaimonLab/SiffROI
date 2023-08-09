@@ -65,7 +65,8 @@ class Fan(ROI):
             return self._mask
         raise NotImplementedError("Fan mask from polygon not yet implemented")
     
-    def segment(self,
+    def segment(
+        self,
         n_segments : int = 8,
         method : FanSegmentationMethod = FanSegmentationMethod.TRIANGLES,
         viewed_from : ViewDirection = ViewDirection.ANTERIOR
@@ -111,10 +112,11 @@ class Fan(ROI):
         """
         method = FanSegmentationMethod(method)
 
-        if method is FanSegmentationMethod.TRIANGLES:
+        if method == FanSegmentationMethod.TRIANGLES:
             self.subROIs = fit_triangles(self.mask, self.orientation, n_segments, viewed_from)
+            return
             
-        if method is FanSegmentationMethod.MIDLINE:
+        if method == FanSegmentationMethod.MIDLINE:
             raise NotImplementedError("Haven't implemented the midline method of segmenting into columns.")
             
 
@@ -205,7 +207,7 @@ def fit_triangles(
     of the bounding_paths. Returns a list of Column objects.
     """
 
-    def single_segmentation(
+    def _single_segmentation(
         slice_mask : np.ndarray,
         orientation : float = 0.0,
         n_segments : int = 8,
@@ -260,7 +262,7 @@ def fit_triangles(
         return masks
     
     masks = np.array([
-        single_segmentation(
+        _single_segmentation(
             slice_mask,
             orientation = orientation,
             n_segments = n_segments,

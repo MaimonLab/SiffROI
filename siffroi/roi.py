@@ -160,6 +160,10 @@ class ROI():
             new_roi.fuse(roi)
         return cls(mask = new_roi.mask, **kwargs)
 
+    def segment(self)->None:
+        """ Default ROIs are not segmentable """
+        raise NoROIError("This ROI has no segment method")
+
     @property
     def mask(self)->np.ndarray:
         """

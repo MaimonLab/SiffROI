@@ -12,6 +12,13 @@ and `Layer` information and 2) to make `napari` widgets to directly
 interact with your data in `napari` (say, with a plugin like
 `siff-napari`).
 
+The goal here is to implement _only_ the parts that are actually
+segmenting `numpy` arrays into sets of masks with various additional
+metadata -- everything else that an `ROIProtocol` or `ROI` describes
+is _purely for convenience_, e.g. to make it easy to inspect with
+the `inspect` module and put into other toolkits. This comes at the
+expense of seeming a little abstract.
+
 Makes use of two primary classes: `ROIProtocol` and `ROI`.
 
 ## ROI Protocols
@@ -86,7 +93,7 @@ refer to the region)
 - `module` : the `module` within `siffroi` that contains
 `Region`-specific `ROIProtocol` objects and methods
 - `default_fcn_str` : a  default protocol referred to by a `str`
-version of its name (for readability -- it can be accessed with
+version of its `name` (for readability -- it can be accessed with
 `Region.default_protocol` which produces the actual `ROIProtocol`
 instead of the string) 
 - `region_enum`, a `RegionEnum` attribute
