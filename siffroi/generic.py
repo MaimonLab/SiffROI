@@ -39,8 +39,6 @@ class GenericRoi(
             raise ValueError("No suitable polygons provided")
         
         if all([polygon.dtype == bool for polygon in shapes]):
-            # If we have a boolean mask, we can just use that as the
-            # and bypass the hullabaloo below
             FROM_MASK = True
 
         main_roi = nth_largest_shape_in_list(

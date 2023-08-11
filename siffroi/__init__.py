@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+import re
 
 from .roi_protocol import ROIProtocol
 from .roi import ROI
@@ -49,7 +50,28 @@ REGIONS = [
     )
 ]
 
-def load_rois(path : 'PathLike')->list['ROI']:
+def load_rois(path : 'PathLike', pattern : Optional[str] = None)->list['ROI']:
+    """
+    If `pattern` is None, just loads all ROIs in subdirectories of `path`.
+    Otherwise, loads all ROIs in subdirectories of `path` whose name matches
+    `pattern`. `pattern` must be a valid regex pattern!
+
+    Parameters
+    ----------
+    path : PathLike
+        Path to directory containing ROIs.
+
+    pattern : Optional[str], optional
+        Regex pattern to match against ROI names, by default None. Must
+        be a valid regex pattern.
+    """
     path = Path(path)
-    return [ROI.load(roipath) for roipath in path.rglob('*.h5roi')]
+    if pattern is None:
+        return [ROI.load(roipath) for roipath in path.rglob('*.h5roi')]
+    else:
+        pattern_regex = re.compile(pattern)
+        return [
+            ROI.load(roipath) for roipath in path.rglob('*.h5roi')
+            if pattern_regex.search(roipath.name)
+        ]
 

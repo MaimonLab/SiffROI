@@ -36,45 +36,6 @@ class ROI():
     Class for an ROI. Contains information about bounding box, brain region to which
     this ROI belongs, method produced to extract this ROI, and probably information about
     how to use it for computations. May be extended by future use cases.
-
-    .........
-
-    Attributes
-    ----------
-
-    polygon : hv.element.path.Polygons
-
-        A polygon representing the bounds of the ROI
-
-    image : np.ndarray (optional)
-
-        A template image used for masking (really anything with the right dims).
-
-    name : str (optional)
-
-        A name used for titling plots or for saving the roi
-
-    plotting_opts : dict
-
-        A dictionary that is unpacked like a holoviews opts structure when plotting.
-
-    ......
-    Methods
-    -------
-
-    center()->(center_x, center_y)
-
-        Returns the mean coordinates of the polygon, if not overwritten by an inheriting class
-
-    mask(image)->masked_array
-
-        Returns a numpy array that is True where the array is contained by the polygon of the ROI
-
-    opts(*args, **kwargs)
-
-        Applys the holoviews opts supplied to the ROI's polygon
-
-
     """
 
     SAVE_ATTRS : list[str] = []

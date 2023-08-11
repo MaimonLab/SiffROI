@@ -38,10 +38,11 @@ also subclasses `UsesFrameDataMixin` or `UsesReferenceFramesMixin`,
 which can be reflected by the property `uses_frame_data` or 
 `uses_reference_frames`.
 
-Please note that for `siff-napari` to work properly, the
+Please note that for `siff-napari`'s `Segmentation Widget` to work properly, the
 return annotations on `extract` must be the ACTUAL class and
 not a string hint. Otherwise the object's `__annotations__['return']`
-will read a `str`
+will read a `str`. TODO: make the `siff-napari` part smarter (convert
+the string to an import)
 
 ## ROI
 
