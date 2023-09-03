@@ -105,49 +105,6 @@ def use_ellipse(
         # and bypass the hullabaloo below
         FROM_MASK = True
 
-    # if slice_idx is None:
-    #     # Get the biggest for all planes
-    #     if FROM_MASK:
-    #         ellipses_by_slice = [
-    #             [ellipse for ellipse in ellipses if np.any(ellipse[slice_idx])]
-    #             for slice_idx in range(image_shape[0])
-    #         ]
-    #         slicewise_idx = [
-    #             np.argsort([np.sum(ellipse) for ellipse in slicewise_ellipses])
-    #             if len(slicewise_ellipses) > 0
-    #             else None
-    #             for slicewise_ellipses in ellipses_by_slice
-    #         ]
-
-    #         slicewise_biggest_ellipse = [
-    #             slicewise_ellipses[sorted_slicewise[-1]]
-    #             if sorted_slicewise is not None
-    #             else np.zeros(image_shape, dtype=bool)
-    #             for slicewise_ellipses, sorted_slicewise in zip(ellipses_by_slice, slicewise_idx)
-    #         ]
-
-    #         main_ellip = np.logical_or.reduce(slicewise_biggest_ellipse)
-            
-    #     else:
-    #         raise NotImplementedError("Use ellipse only supports masks for now")
-
-    # else:
-    #     size_sorted_idx = np.argsort(
-    #         [
-    #             np.sum(ellipse)
-    #             for ellipse in ellipses
-    #             if np.round(ellipse[0][0]) == slice_idx
-    #         ]
-    #     ) if FROM_MASK else np.argsort(
-    #         [
-    #             polygon_area(ellipse)
-    #             for ellipse in ellipses
-    #             if np.round(ellipse[0][0]) == slice_idx
-    #         ]
-    #     )
-
-    #     main_ellip = ellipses[size_sorted_idx[-1]]
-
     center = None
 
     if (ExtraRois(extra_rois) == ExtraRois.CENTER):

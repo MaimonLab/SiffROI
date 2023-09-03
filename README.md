@@ -1,5 +1,11 @@
 # SiffRoi
 
+TODO:
+-   Rework `UsesReferenceFramesMixin` to make it opt-out: if
+there's no reference frames, it can use the `PHOTON_COUNTS`
+layer or something similar. Maybe this is a `siff-napari`
+thing to change how to pass in the data, though...
+
 Tools for `ROI` annotation, segmentation, etc.
 
 This is meant to be `napari` agnostic without being _too_
