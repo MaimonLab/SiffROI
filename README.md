@@ -1,10 +1,12 @@
 # SiffRoi
 
 TODO:
--   Rework `UsesReferenceFramesMixin` to make it opt-out: if
+- Rework `UsesReferenceFramesMixin` to make it opt-out: if
 there's no reference frames, it can use the `PHOTON_COUNTS`
 layer or something similar. Maybe this is a `siff-napari`
 thing to change how to pass in the data, though...
+- Import different `Region` objects on demand, rather than
+at initialization.
 
 Tools for `ROI` annotation, segmentation, etc.
 

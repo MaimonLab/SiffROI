@@ -15,7 +15,8 @@ packages = ["siffroi"]
 
 [project]
 name = "siffroi"
-dynamic = ["version"]
+version = "0.0.1"
+#dynamic = ["version"]
 readme = "README.md"
 description = "A package for annotating central complex ROIs"
 license = {text="GPL-3.0-or-later"}
@@ -28,4 +29,5 @@ dependencies = [
     "numpy >= 1.15",
     "scipy",
     "h5py",
+    "matplotlib"
 ]
