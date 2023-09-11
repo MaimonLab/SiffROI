@@ -11,6 +11,7 @@ source:
   #git_url: ../
 
 build:
+  noarch: python
   number: {{ GIT_DESCRIBE_NUMBER }}
   script: "{{ PYTHON }} -m pip install ."
 
@@ -33,6 +34,10 @@ requirements:
     - scipy
     - h5py
     - matplotlib
+
+test:
+  imports:
+    - siffroi
 
 about:
   home: "https://github.com/maimonlab/siffroi"

@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 import importlib
 from logging import warning
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 
 from h5py import File as h5File
 from h5py import Empty, Group
@@ -47,6 +47,7 @@ class ROI():
             name        : Optional[str]             = None,
             slice_idx   : Optional[int]             = None,
             subROIs     : list['subROI']            = [],
+            info_string : Optional[str]             = None,
         ):
         """
         Can be defined either with a mask or a polygon with a source image. If a mask
@@ -78,6 +79,9 @@ class ROI():
         
         self.slice_idx = slice_idx
         self.subROIs = subROIs
+
+        if not info_string is None:
+            self.info_string = info_string
 
     def center(self, plane : Optional[int] = None)->np.ndarray:
         """
@@ -271,15 +275,28 @@ class ROI():
                 subroi.save_to_group(subrois_group)
 
     @classmethod
-    def load(cls, load_path : 'PathLike')->'ROI':
+    def load(
+            cls,
+            load_path : 'PathLike',
+            filter_condition : Optional[Callable[['ROI'], bool]] = None
+        )->'ROI':
         """
-        Subclasses may want to overload this to import additional attributes
+        Subclasses may want to overload this to import additional attributes.
+
+        If `filter_condition` is provided, it is a function that takes a ROI
+        and returns True if it should be loaded and False if it should not.
+        Allows 
         
         Currently only loads the mask, image, polygon, name, and slice_idx.
         """
         load_path = Path(load_path)
+        if filter_condition is None:
+            filter_condition = lambda x: True
 
         with h5File(load_path.with_suffix('.h5roi'), 'r') as f:
+            # Try to import the class from the module it claims
+            # it came from. If that fails, import as the generic
+            # ROI class.
             try:
                 mod = importlib.import_module(f.attrs['module'])
                 cls = getattr(mod, f.attrs['class'])
@@ -292,6 +309,7 @@ class ROI():
             image_shape = None if isinstance(src:= f['shape'][()], Empty) else src
             name = None if isinstance(nm := f.attrs['name'],Empty) else nm
             slice_idx = None if isinstance(sl_id := f.attrs['slice_idx'], Empty) else sl_id
+            info_string = None if isinstance(info := f.attrs['info_string'], Empty) else info
 
             subrois : list['subROI'] = []
             if 'subROIs' in f and len(f['subROIs']) > 0:
@@ -316,6 +334,7 @@ class ROI():
                 name = name,
                 slice_idx = slice_idx,
                 subROIs = subrois,
+                info_string = info_string,
             )
 
             for attr in cls.SAVE_ATTRS:
@@ -326,7 +345,9 @@ class ROI():
                         setattr(roi, attr, f.attrs[attr])
                 if attr in f.keys():
                     setattr(roi, attr, f[attr][()])
-        
+
+            if not(filter_condition(roi)):
+                raise NoROIError("ROI did not pass filter condition, was not loaded")
         return roi
         
     def __hash__(self)->float:

@@ -3,7 +3,6 @@ requires = [
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
     "wheel",
-    "numpy",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -15,7 +14,7 @@ packages = ["siffroi"]
 
 [project]
 name = "siffroi"
-version = "0.0.1"
+version = "0.0.2"
 #dynamic = ["version"]
 readme = "README.md"
 description = "A package for annotating central complex ROIs"
