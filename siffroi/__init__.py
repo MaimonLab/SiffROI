@@ -4,6 +4,7 @@ import re
 
 from .roi_protocol import ROIProtocol
 from .roi import ROI
+from .utils.exceptions import NoROIError
 from .utils.regions import RegionEnum, Region
 from . import (
     ellipsoid_body, fan_shaped_body, protocerebral_bridge,

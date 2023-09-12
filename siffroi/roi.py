@@ -39,6 +39,7 @@ class ROI():
     """
 
     SAVE_ATTRS : list[str] = []
+    FILE_EXTENSION : str = "h5roi"
 
     def __init__(self,
             mask        : 'MaskLike'                = None,
@@ -225,7 +226,7 @@ class ROI():
 
         """
         save_path = Path(save_path)
-        save_path = save_path / f"{self.__class__.__name__}_{self.hashname}.h5roi"
+        save_path = save_path / f"{self.__class__.__name__}_{self.hashname}.{self.__class__.FILE_EXTENSION}"
         save_path.parent.mkdir(parents = True, exist_ok=True)
 
         with h5File(save_path, 'w') as f:
@@ -233,6 +234,9 @@ class ROI():
             f.attrs['slice_idx'] = self.slice_idx if self.slice_idx is not None else Empty("i")
             f.attrs['class'] = self.__class__.__name__
             f.attrs['module'] = self.__class__.__module__
+
+            if hasattr(self, 'info_string'):
+                f.attrs['info_string'] = self.info_string if self.info_string is not None else Empty("s")
 
             for attr in self.__class__.SAVE_ATTRS:
                 if isinstance(getattr(self,attr), np.ndarray):
@@ -293,7 +297,7 @@ class ROI():
         if filter_condition is None:
             filter_condition = lambda x: True
 
-        with h5File(load_path.with_suffix('.h5roi'), 'r') as f:
+        with h5File(load_path.with_suffix(f'.{cls.FILE_EXTENSION}'), 'r') as f:
             # Try to import the class from the module it claims
             # it came from. If that fails, import as the generic
             # ROI class.
@@ -309,7 +313,7 @@ class ROI():
             image_shape = None if isinstance(src:= f['shape'][()], Empty) else src
             name = None if isinstance(nm := f.attrs['name'],Empty) else nm
             slice_idx = None if isinstance(sl_id := f.attrs['slice_idx'], Empty) else sl_id
-            info_string = None if isinstance(info := f.attrs['info_string'], Empty) else info
+            info_string = None if (info := f.attrs.get('info_string', None)) is None else info
 
             subrois : list['subROI'] = []
             if 'subROIs' in f and len(f['subROIs']) > 0:
