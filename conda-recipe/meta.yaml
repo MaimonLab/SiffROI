@@ -36,8 +36,14 @@ requirements:
     - matplotlib
 
 test:
+  requires:
+    - numpy
+    - pytest
+    - scipy
   imports:
     - siffroi
+  commands:
+    - pytest
 
 about:
   home: "https://github.com/maimonlab/siffroi"
