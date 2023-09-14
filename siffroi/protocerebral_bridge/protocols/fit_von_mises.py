@@ -31,11 +31,11 @@ class FitVonMises(
     base_roi_text = "View correlation map"
 
     def extract(
-            self,
-            frame_data : 'FrameData',
-            reference_frames : 'ReferenceFrames',
-            view_direction : ViewDirection = ViewDirection.POSTERIOR,
-            roi_name : str = "Protocerebral bridge",
+        self,
+        frame_data : 'FrameData',
+        reference_frames : 'ReferenceFrames',
+        view_direction : ViewDirection = ViewDirection.POSTERIOR,
+        roi_name : str = "Protocerebral bridge",
     )->GlobularMustache:
         """
         Returns a GlobularMustache ROI made up of the individual
@@ -54,11 +54,11 @@ class FitVonMises(
             )
 
     def fca_to_pb(
-            self,
-            event : Any,
-            view_direction : ViewDirection,
-            roi_name : str = "Protocerebral bridge",
-        ):
+        self,
+        event : Any,
+        view_direction : ViewDirection,
+        roi_name : str = "Protocerebral bridge",
+    ):
         corr_window : 'FourCorrAnalysis' = event.source
         glomeruli = corr_window.masks
 

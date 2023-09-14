@@ -30,3 +30,6 @@ dependencies = [
     "h5py",
     "matplotlib"
 ]
+
+[project.scripts]
+fca-pb = "siffroi.scripts.fca_protocerebral_bridge:main"
