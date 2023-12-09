@@ -1,6 +1,94 @@
 # Code for ROI extraction from the noduli after manual input
 
+from typing import Optional
+
+import numpy as np
+
 from ..rois.blob import Blobs
+from ...roi import ViewDirection
+from ...roi_protocol import ROIProtocol
+from ...utils import n_largest_shapes_in_list
+from ...utils.mixins import (
+    UsesFrameDataMixin, ExpectsShapesMixin, UsesAnatomyReferenceMixin,
+    UsesReferenceFramesMixin,
+)
+from ...utils.types import (
+    FrameData, ReferenceFrames, AnatomyReference,
+)
+
+class DrawROI(
+    ExpectsShapesMixin,
+    UsesAnatomyReferenceMixin,
+    UsesReferenceFramesMixin,
+    ROIProtocol
+    ):
+
+    name = "Draw ROI"
+    base_roi_text = "Draw ROIs manually"
+
+    extraction_arg_list = [
+        "view_direction"
+    ]
+
+    def extract(
+        self,
+        reference_frames : 'ReferenceFrames',
+        anatomy_reference : 'AnatomyReference',
+        shapes : list[np.ndarray],
+        roi_name : str = "Noduli",
+        slice_idx : Optional[int] = None,
+        view_direction : ViewDirection = ViewDirection.POSTERIOR,
+    )-> Blobs:
+        
+        image_shape = reference_frames.shape
+        slice_idx = None if (slice_idx is None) or (slice_idx < 0) else int(slice_idx)
+
+        blobs = n_largest_shapes_in_list(
+            shapes,
+            n = 2,
+            image_shape= image_shape,
+            slice_idx=slice_idx,
+        )
+
+
+
+
+class ICA(
+    UsesFrameDataMixin,
+    ROIProtocol,
+    ):
+    
+    name = 'ICA (independent component analysis)'
+    base_roi_text = 'Extract noduli with ICA'
+
+    extraction_arg_list = [
+        "view_direction",
+    ]
+
+    def extract(
+        self,
+        frame_data : 'FrameData',
+        roi_name : str = "Noduli",
+        slice_idx : Optional[int] = None,
+        view_direction : ViewDirection = ViewDirection.POSTERIOR
+    ):
+        return ica(
+            frame_data = frame_data,
+            roi_name=roi_name,
+            slice_idx=slice_idx,
+            view_direction=view_direction,
+        )
+
+
+def ica(
+    frame_data,
+    roi_name,
+    slice_idx,
+    view_direction,    
+):
+    """ Implemented ICA on frame_data here"""
+    raise NotImplementedError()
+
 
 def hemispheres(
         reference_frames : list,
@@ -16,33 +104,6 @@ def hemispheres(
     # """
 
     raise NotImplementedError()
-    # using_holoviews = True
-    # if type(polygon_source) is dict: # use holoviews
-    #     annotation_dict = polygon_source
-    # else:
-    #     using_holoviews = False
-    #     raise NotImplementedError("Noduli hemispheres not implemented without holoviews yet")
-
-    # slice_idx = None
-    # if 'slice_idx' in kwargs:
-    #     if isinstance(kwargs['slice_idx'], int):
-    #         slice_idx = kwargs['slice_idx']
-    #     del kwargs['slice_idx']
-
-    # if using_holoviews:    
-    #     if len(annotation_dict[slice_idx]['annotator'].annotated.data) <2:
-    #         raise ValueError("Fewer than two ROIs provided")
-
-    #     poly_list = get_largest_polygon_hv(annotation_dict, slice_idx = slice_idx, n_polygons = 2)
-    #     polygons_combined = hv.Polygons(
-    #         [
-    #             {
-    #                 'x' : polygon.data[0]['x'],
-    #                 'y' : polygon.data[0]['y']
-    #             }
-    #             for polygon in poly_list
-    #         ]
-    #     )
 
     # return Blobs(polygons_combined, slice_idx)
 

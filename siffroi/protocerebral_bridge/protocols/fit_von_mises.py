@@ -29,6 +29,9 @@ class FitVonMises(
 
     name = "Fit von Mises"
     base_roi_text = "View correlation map"
+    extraction_arg_list = [
+        "view_direction"
+    ]
 
     def extract(
         self,

@@ -7,6 +7,7 @@ import fourcorr
 from siffpy import SiffReader
 from siffroi.protocerebral_bridge.rois.mustache import GlobularMustache
 
+
 def on_done_clicked(siffpath, event):
     corr_window : 'fourcorr.FourCorrAnalysis' = event.source
     roi = GlobularMustache(
@@ -20,10 +21,27 @@ def on_done_clicked(siffpath, event):
 
 def main():
     if len(sys.argv) < 2:
+        #Import QApplication
+        # from PyQt5.QtWidgets import QApplication
+        # from PyQt5.QtWidgets import QFileDialog
+
+        # QApplication([])
+
+
+        # filename = QFileDialog.getOpenFileName(
+        #     caption='Open file',
+        #     directory='',
+        #     filter='SIFF files (*.siff)',
+        #     initialFilter='SIFF files (*.siff)',
+        #     options=QFileDialog.Options()
+        # )[0]
+        # Open a file dialog window and get the file
+
         print("Usage: fca_protocerebral_bridge.py <siff file>")
         sys.exit(1)
-    
-    filename = sys.argv[1]
+        
+    else:    
+        filename = sys.argv[1]
     siff = SiffReader(filename)
 
     if not hasattr(siff, 'reference_frames'):

@@ -113,7 +113,12 @@ class Fan(ROI):
         method = FanSegmentationMethod(method)
 
         if method == FanSegmentationMethod.TRIANGLES:
-            self.subROIs = fit_triangles(self.mask, self.orientation, n_segments, viewed_from)
+            self.subROIs = fit_triangles(
+                self.mask,
+                self.orientation,
+                n_segments,
+                viewed_from
+            )
             return
             
         if method == FanSegmentationMethod.MIDLINE:
@@ -137,10 +142,9 @@ class Fan(ROI):
         if hasattr(self, 'columns'):
             ret_str += f"\tSegmented into {len(self.columns)} columns\n"
         if hasattr(self,'perspective'):
-            ret_str += f"\tViewed from {self.perspective} direction\n"
+            ret_str += f"\tViewed from {self.view_direction.value} direction\n"
         if hasattr(self,'midline'):
             ret_str += f"Midline defined as\n"
-        ret_str += f"Custom plotting options: {self.plotting_opts}\n"
 
         return ret_str
 
@@ -237,7 +241,10 @@ def fit_triangles(
             slice_mask.shape
         )
 
-        most_downward_point = grid_xx[most_downward_along_orientation] - 1j*grid_yy[most_downward_along_orientation]
+        most_downward_point = (
+            grid_xx[most_downward_along_orientation] - 
+            1j*grid_yy[most_downward_along_orientation]
+        )
 
         hub_point = (
             np.real(cplx_centroid*np.exp(-1j*orientation)) +
@@ -269,7 +276,7 @@ def fit_triangles(
             view_direction = viewed_from
         )
         for slice_mask in mask
-    ]).sum(axis=1)
+    ]).swapaxes(0,1) # segment, slice, y, x
 
     phases = np.linspace(
         0, 2*np.pi, n_segments, endpoint=False

@@ -190,7 +190,7 @@ class Ellipse(ROI):
         if len(self.wedges) > 0:
             ret_str += f"\tSegmented into {len(self.wedges)} wedges\n"
         if hasattr(self,'perspective'):
-            ret_str += f"\tViewed from {self.perspective} direction\n"
+            ret_str += f"\tViewed from {self.view_direction.value} direction\n"
         ret_str += f"\tOrientation {self.orientation}\n"
 
         return ret_str

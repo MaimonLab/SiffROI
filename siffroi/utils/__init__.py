@@ -101,6 +101,28 @@ def nth_largest_shape_in_list(
         main_shape = shapes[size_sorted_idx[-n]]
     return main_shape
 
+def n_largest_shapes_in_list(
+        shapes : list[np.ndarray],
+        n : int = 1,
+        slice_idx : Optional[int] = None,
+        image_shape : Optional[tuple[int]] = None,
+    )->list[np.ndarray]:
+    """
+    Returns the n largest shapes in the provided list, in descending
+    order of size
+    """
+
+    return [
+        nth_largest_shape_in_list(
+            shapes,
+            n=i,
+            slice_idx=slice_idx,
+            image_shape=image_shape,
+        )
+        for i in range(1,n+1)
+    ]
+
+
 def polygon_to_mask(polygon, image_shape : tuple[int,int]) -> np.ndarray:
     """
     polygon : a holoviews.element.Polygons object
