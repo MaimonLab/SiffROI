@@ -32,6 +32,9 @@ class GlobularMustache(ROI):
         # when I already have a subROIs initialization in the superclass..
         if (globular_glomeruli_masks is None) and 'subROIs' in kwargs:
             globular_glomeruli_masks = kwargs.pop('subROIs')
+            # haven't figrued out why this happens yet...
+            if any(isinstance(x, subROI) for x in globular_glomeruli_masks):
+                globular_glomeruli_masks = [x.mask for x in globular_glomeruli_masks]
 
         if phases is None:
             phases = [None for _ in globular_glomeruli_masks]
@@ -78,7 +81,7 @@ class GlobularMustache(ROI):
             key = lambda x: x.pseudophase
         )
 
-    def sort_glomeruli_by_center(self, axis : int = 0, increasing : bool = True):
+    def sort_glomeruli_by_center(self, axis : int = -1, increasing : bool = True):
         """
         Sorts glomeruli by center
         """
