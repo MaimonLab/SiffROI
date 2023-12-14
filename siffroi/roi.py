@@ -382,7 +382,7 @@ class ROI():
         """
         Pretty summary of an ROI... if I write it.
         """
-        return f"ROI superclass"
+        return f"ROI of class {self.__class__.__name__} with name {self.name}"
 
     def __getitem__(self, key):
         """
