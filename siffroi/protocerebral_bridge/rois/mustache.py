@@ -64,30 +64,30 @@ class GlobularMustache(ROI):
     def glomeruli(self):
         return self.subROIs
 
-    class GlomerulusROI(subROI):
-        """
-        A single glomerulus
-        """
+class GlomerulusROI(subROI):
+    """
+    A single glomerulus
+    """
 
-        SAVE_ATTRS = [
-            'pseudophase',
-        ]
+    SAVE_ATTRS = [
+        'pseudophase',
+    ]
 
-        def __init__(
-            self,
-            mask : MaskLike = None,
-            polygon: PolygonLike = None,
-            image_shape : ImageShapeLike = None,
-            name: Optional[str] = None,
-            slice_idx: Optional[int] = None,
-            pseudophase : Optional[float] = None,
-        ):
-            super().__init__(
-                mask = mask,
-                polygon=polygon,
-                image_shape=image_shape,
-                name=name,
-                slice_idx=slice_idx,
-            )
-            self.pseudophase = pseudophase
+    def __init__(
+        self,
+        mask : MaskLike = None,
+        polygon: PolygonLike = None,
+        image_shape : ImageShapeLike = None,
+        name: Optional[str] = None,
+        slice_idx: Optional[int] = None,
+        pseudophase : Optional[float] = None,
+    ):
+        super().__init__(
+            mask = mask,
+            polygon=polygon,
+            image_shape=image_shape,
+            name=name,
+            slice_idx=slice_idx,
+        )
+        self.pseudophase = pseudophase
 
