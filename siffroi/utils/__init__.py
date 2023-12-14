@@ -50,6 +50,11 @@ def nth_largest_shape_in_list(
     slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
     if len(shapes) == 0:
         raise ValueError("No suitable shapes provided")
+    if (n > len(shapes)) or (n < 1):
+        raise ValueError(
+            f"n must be between 1 and the number of shapes provided." + 
+            "Requested {n}-largest of {len(shapes)} shapes"
+        )
     
     if all([shape.dtype == bool for shape in shapes]):
         # If we have a boolean mask, we can just use that as the

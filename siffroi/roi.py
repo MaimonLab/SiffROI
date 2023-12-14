@@ -79,7 +79,8 @@ class ROI():
             self._name = name
         
         self.slice_idx = slice_idx
-        self.subROIs = subROIs
+        if len(subROIs) > 0:
+            self.subROIs = subROIs
 
         if not info_string is None:
             self.info_string = info_string
@@ -356,7 +357,7 @@ class ROI():
         
     def __hash__(self)->float:
         if hasattr(self, 'image'):
-            return hash((self.center, self.__class__.__name__, self.mask().tobytes()))
+            return hash((self.center, self.__class__.__name__, self.mask.tobytes()))
         else:
             return hash((self.center, self.__class__.name))
 
@@ -404,6 +405,18 @@ class ROI():
 
     def __len__(self):
         return 1
+    
+    def __iadd__(self, other : 'ROI'):
+        """
+        Combines another ROI's mask into this one's.
+
+        Is this the most intuitive behavior? Should there be
+        some condition checks?
+
+        """
+        if not isinstance(other, ROI):
+            raise TypeError(f"Can only add two ROIs, not {type(other)}")
+        self.fuse(other)
     
     def segment(self) -> None:
         """ Abstract method, to be implemented by individual ROIs """

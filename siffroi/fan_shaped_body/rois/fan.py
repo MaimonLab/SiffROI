@@ -207,8 +207,7 @@ def fit_triangles(
     )->list[Column]:
     """
     Takes a mask and the bounding paths of a Fan and divides
-    it angularly in n_segments wedges extending from the intersection
-    of the bounding_paths. Returns a list of Column objects.
+    it angularly in n_segments wedges. Returns a list of Column objects.
     """
 
     def _single_segmentation(
@@ -221,6 +220,14 @@ def fit_triangles(
         Find the centroid of a plane's mask, move along the 'orientation' axis
         until you find the most downward point, and then divide the plane into
         n_segments wedges extending from the centroid to the most downward point.
+
+                _________________
+               /.................\ 
+              /....__________ ....\ 
+             /..../          \ ....\ 
+            /____/      x     \_____\
+
+            wedges emanate from x above 
 
         Returns a list of n_segment masks
         """
@@ -236,16 +243,20 @@ def fit_triangles(
 
         most_downward_along_orientation = np.unravel_index(
             np.argmax(
-                np.imag(cplx_mask*np.exp(-1j*orientation))*slice_mask # rotate along orientation axis
+                np.imag(cplx_mask*np.exp(-1j*orientation))# rotate along orientation axis
+                *slice_mask
             ),
             slice_mask.shape
         )
 
+        # Translate index into point
         most_downward_point = (
             grid_xx[most_downward_along_orientation] - 
             1j*grid_yy[most_downward_along_orientation]
         )
 
+        # Take the oriented-directed x coordinate of the centroid and the
+        # orientation-directed y coordinate of the most downward point
         hub_point = (
             np.real(cplx_centroid*np.exp(-1j*orientation)) +
             np.imag(most_downward_point*np.exp(-1j*orientation))*1j

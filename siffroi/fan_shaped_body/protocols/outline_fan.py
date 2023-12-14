@@ -50,9 +50,6 @@ class OutlineFan(
             slice_idx=slice_idx,
         )
 
-    def segment(self):
-        raise NotImplementedError()
-
 def outline_fan(
         polygons : list[np.ndarray],
         anatomy_reference : AnatomyReference,
@@ -66,15 +63,13 @@ def outline_fan(
     Takes the largest ROI and assumes it's the outline of the fan-shaped body.
 
     """
-    FROM_MASK = False
     slice_idx = None if (slice_idx is None) or (slice_idx < 0) else slice_idx
     if len(polygons) == 0:
         raise ValueError("No suitable polygons provided")
-    
-    if all([polygon.dtype == bool for polygon in polygons]):
-        # If we have a boolean mask, we can just use that as the
-        # and bypass the hullabaloo below
-        FROM_MASK = True
+
+    # If we have a boolean mask, we can just use that as the
+    # and bypass the hullabaloo below        
+    FROM_MASK = all(polygon.dtype == bool for polygon in polygons)
 
     main_fan = nth_largest_shape_in_list(
         polygons,

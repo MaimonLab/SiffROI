@@ -50,6 +50,31 @@ class DrawROI(
             slice_idx=slice_idx,
         )
 
+        FROM_MASK = all(polygon.dtype == bool for polygon in shapes)
+        orientation = 0.0
+
+        if not (anatomy_reference is None) and (len(anatomy_reference) > 0):
+            if isinstance(anatomy_reference, (tuple,list)):
+                anatomy_reference = anatomy_reference[0]
+            # Goes postero-dorsal to antero-ventral
+            start_pt = anatomy_reference[0][-2:] # y, x
+            end_pt = anatomy_reference[1][-2:] # y, x
+            # dx + i*dy in SCREEN coordinates
+            start_to_end = (end_pt[-1] - start_pt[-1]) - 1j*(end_pt[0] - start_pt[0])
+            orientation += np.angle(1j*start_to_end)
+            # I always find geometry with complex numbers much easier than using tangents etc.
+
+        
+
+        return Blobs(
+            mask = blobs if FROM_MASK else None,
+            polygons = None if FROM_MASK else blobs,
+            image_shape = image_shape,
+            slice_idx = slice_idx,
+            name = roi_name,
+            orientation = orientation,
+            view_direction = view_direction,
+        )
 
 
 

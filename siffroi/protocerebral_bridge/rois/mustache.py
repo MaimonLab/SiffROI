@@ -38,7 +38,7 @@ class GlobularMustache(ROI):
                 name=name,
                 slice_idx=slice_idx,
                 pseudophase=phase,
-            ) for glom, phase in zip(globular_glomeruli_masks,phases)
+            ) for glom, phase in zip(globular_glomeruli_masks, phases)
         ]
 
         if mask is None:
