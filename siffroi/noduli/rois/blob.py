@@ -97,21 +97,21 @@ class Blobs(ROI):
         else:
             return object.__getattribute__(self, attr)
 
-    class Hemisphere(subROI):
-        """ A vanilla ROI, except it's classed as a subROI. Has just a polygon. """
-        def __init__(self,
-                mask: 'MaskLike' = None,
-                polygon: 'PolygonLike' = None,
-                image_shape: 'ImageShapeLike' = None,
-                slice_idx: Optional[int] = None,
-                phase : Optional[float] = None,
-                **kwargs
-            ):
-            self.phase = phase
-            super().__init__(
-                mask = mask,
-                polygon = polygon,
-                image_shape = image_shape,
-                slice_idx = slice_idx,
-                name = "Hemisphere",
-            )
+class Hemisphere(subROI):
+    """ A vanilla ROI, except it's classed as a subROI. Has just a polygon. """
+    def __init__(self,
+            mask: 'MaskLike' = None,
+            polygon: 'PolygonLike' = None,
+            image_shape: 'ImageShapeLike' = None,
+            slice_idx: Optional[int] = None,
+            phase : Optional[float] = None,
+            **kwargs
+        ):
+        self.phase = phase
+        super().__init__(
+            mask = mask,
+            polygon = polygon,
+            image_shape = image_shape,
+            slice_idx = slice_idx,
+            name = "Hemisphere",
+        )

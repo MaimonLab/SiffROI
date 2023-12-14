@@ -25,24 +25,30 @@ class GlobularMustache(ROI):
         globular_glomeruli_masks: Optional[list[np.ndarray]] = None,
         phases : Optional[list[Optional[float]]] = None,
         view_direction : ViewDirection = ViewDirection.POSTERIOR,
+        **kwargs,
     ):
-        
+
+        # Dumb of me to use an alias like this in this specific method
+        # when I already have a subROIs initialization in the superclass..
+        if (globular_glomeruli_masks is None) and 'subROIs' in kwargs:
+            globular_glomeruli_masks = kwargs.pop('subROIs')
+
         if phases is None:
             phases = [None for _ in globular_glomeruli_masks]
 
         self.subROIs = [
-            GlobularMustache.GlomerulusROI(
+            GlomerulusROI(
                 mask = glom,
                 polygon=None,
                 image_shape=image_shape,
                 name=name,
                 slice_idx=slice_idx,
                 pseudophase=phase,
-            ) for glom, phase in zip(globular_glomeruli_masks, phases)
+            ) for glom, phase in zip( globular_glomeruli_masks , phases)
         ]
 
         if mask is None:
-            mask = np.array(self.subROIs).any(axis=0)
+            mask = np.array(globular_glomeruli_masks).any(axis=0)
 
         super().__init__(
             mask = mask,
@@ -81,6 +87,7 @@ class GlomerulusROI(subROI):
         name: Optional[str] = None,
         slice_idx: Optional[int] = None,
         pseudophase : Optional[float] = None,
+        **kwargs
     ):
         super().__init__(
             mask = mask,
