@@ -69,6 +69,23 @@ class GlobularMustache(ROI):
     @property
     def glomeruli(self):
         return self.subROIs
+    
+    def sort_glomeruli_by_phase(self):
+        """
+        Sorts glomeruli by pseudophase
+        """
+        self.subROIs.sort(
+            key = lambda x: x.pseudophase
+        )
+
+    def sort_glomeruli_by_center(self, axis : int = 0, increasing : bool = True):
+        """
+        Sorts glomeruli by center
+        """
+        self.subROIs.sort(
+            key = lambda x: x.center()[axis],
+            reverse = not increasing,
+        )
 
 class GlomerulusROI(subROI):
     """
