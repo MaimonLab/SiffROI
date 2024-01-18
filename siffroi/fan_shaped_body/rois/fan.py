@@ -25,6 +25,7 @@ class Fan(ROI):
     SAVE_ATTRS = [
         'view_direction',
         'orientation',
+        'mirrored',
     ]
 
     def __init__(
@@ -35,6 +36,7 @@ class Fan(ROI):
             slice_idx: Optional[int] = None,
             orientation : Optional[float] = 0.0,
             view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+            mirrored : bool = True,
             **kwargs
         ):
         if not "name" in kwargs:
@@ -46,6 +48,7 @@ class Fan(ROI):
             slice_idx=slice_idx,
             **kwargs
         )
+        self.mirrored = mirrored
         self.orientation = orientation
         self.view_direction = view_direction
 
@@ -117,7 +120,8 @@ class Fan(ROI):
                 self.mask,
                 self.orientation,
                 n_segments,
-                viewed_from
+                viewed_from,
+                mirrored = self.mirrored
             )
             return
             
@@ -203,7 +207,8 @@ def fit_triangles(
     mask : 'MaskLike',
     orientation : float,
     n_segments : int,
-    viewed_from : ViewDirection = ViewDirection.ANTERIOR
+    viewed_from : ViewDirection = ViewDirection.ANTERIOR,
+    mirrored : bool = True,
     )->list[Column]:
     """
     Takes a mask and the bounding paths of a Fan and divides
@@ -292,6 +297,8 @@ def fit_triangles(
     phases = np.linspace(
         0, 2*np.pi, n_segments, endpoint=False
     )
+    if mirrored:
+        phases = phases[::-1]
 
     return [
         Column(

@@ -49,6 +49,7 @@ class Ellipse(ROI):
         'orientation',
         'center_poly',
         'view_direction',
+        'mirrored',
     ]
 
     def __init__(
@@ -60,6 +61,7 @@ class Ellipse(ROI):
             orientation : float = 0.0,
             center_poly : Optional[np.ndarray] = None,
             view_direction : ViewDirection = ViewDirection.ANTERIOR,
+            mirrored : bool = True,
             **kwargs
         ):
         """
@@ -86,6 +88,7 @@ class Ellipse(ROI):
         )
         self.orientation = orientation
         self.center_poly = center_poly
+        self.mirrored = mirrored
         self.view_direction = ViewDirection(view_direction)
 
     @property
@@ -165,6 +168,9 @@ class Ellipse(ROI):
                 n_segments = n_segments,
                 view_direction= self.view_direction
             )
+        phases = np.linspace(-np.pi, np.pi, n_segments, endpoint=False)
+        if self.mirrored:
+            phases = phases[::-1]
         self.subROIs = [
             WedgeROI(
                 mask = wedge_mask,
@@ -174,7 +180,9 @@ class Ellipse(ROI):
                 name = f"Wedge {i}",
                 phase = angle,
             )
-            for i, (wedge_mask, angle) in enumerate(zip(masks, np.linspace(-np.pi, np.pi, n_segments, endpoint=False)))
+            for i, (wedge_mask, angle) in enumerate(
+                zip(masks, phases)
+            )
         ]
 
     def __str__(self)->str:

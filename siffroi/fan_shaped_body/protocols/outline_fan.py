@@ -28,7 +28,7 @@ class OutlineFan(
     ANATOMY_REFERENCE_SHAPE_TYPE = "line"
 
     extraction_arg_list = [
-        "view_direction"
+        "view_direction", "mirrored",
     ]
 
     def extract(
@@ -37,6 +37,7 @@ class OutlineFan(
         anatomy_reference : AnatomyReference,
         shapes : list[np.ndarray],
         roi_name : str = "Fan",
+        mirrored : bool = True,
         slice_idx : Optional[int] = None,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
     )-> Fan:
@@ -45,6 +46,7 @@ class OutlineFan(
             shapes,
             anatomy_reference,
             image_shape,
+            mirrored = mirrored,
             roi_name = roi_name,
             view_direction=view_direction,
             slice_idx=slice_idx,
@@ -55,6 +57,7 @@ def outline_fan(
         anatomy_reference : AnatomyReference,
         image_shape : tuple[int],
         roi_name = "Fan",
+        mirrored : bool = True,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
         slice_idx : Optional[int] = -1,
         **kwargs
@@ -97,6 +100,7 @@ def outline_fan(
         image_shape = image_shape,
         slice_idx = slice_idx,
         name = roi_name,
+        mirrored=mirrored,
         orientation = orientation,
         view_direction = view_direction,
     )

@@ -30,7 +30,7 @@ class FitVonMises(
     name = "Fit von Mises"
     base_roi_text = "View correlation map"
     extraction_arg_list = [
-        "view_direction"
+        "view_direction", "mirrored",
     ]
 
     def extract(
@@ -38,6 +38,7 @@ class FitVonMises(
         frame_data : 'FrameData',
         reference_frames : 'ReferenceFrames',
         view_direction : ViewDirection = ViewDirection.POSTERIOR,
+        mirrored : bool = True,
         roi_name : str = "Protocerebral bridge",
     )->GlobularMustache:
         """
@@ -52,7 +53,7 @@ class FitVonMises(
 
         fca.done_clicked.connect(
             lambda x: self.fca_to_pb(
-                    x, view_direction, roi_name=roi_name
+                    x, view_direction, roi_name=roi_name, mirrored = mirrored,
                 )
             )
 
@@ -60,6 +61,7 @@ class FitVonMises(
         self,
         event : Any,
         view_direction : ViewDirection,
+        mirrored : bool = True,
         roi_name : str = "Protocerebral bridge",
     ):
         corr_window : 'FourCorrAnalysis' = event.source
@@ -70,5 +72,6 @@ class FitVonMises(
             globular_glomeruli_masks = glomeruli,
             view_direction=view_direction,
             name = roi_name,
+            mirrored = mirrored,
         )
         self.events.extracted()

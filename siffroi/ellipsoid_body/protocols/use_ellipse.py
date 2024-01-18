@@ -29,7 +29,8 @@ class UseEllipse(
     ANATOMY_REFERENCE_SHAPE_TYPE = "line"
 
     extraction_arg_list = [
-        "extra_rois", "view_direction"
+        "extra_rois", "view_direction",
+        "mirrored",
     ]
 
     def extract(
@@ -38,6 +39,7 @@ class UseEllipse(
         anatomy_reference : 'AnatomyReference',
         shapes : list[np.ndarray],
         roi_name : str = "Ellipse",
+        mirrored : bool = True,
         slice_idx : Optional[int] = None,
         extra_rois : 'ExtraRois' = ExtraRois.CENTER,
         view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
@@ -51,6 +53,7 @@ class UseEllipse(
             view_direction=view_direction,
             slice_idx=slice_idx,
             extra_rois=extra_rois,
+            mirrored=mirrored
         )
 
 def use_ellipse(
@@ -61,6 +64,7 @@ def use_ellipse(
     view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
     slice_idx : Optional[int] = -1,
     extra_rois : 'ExtraRois' = ExtraRois.CENTER,
+    mirrored : bool = True,
     **kwargs) -> 'Ellipse':
     """
     Simply takes the largest ellipse type shape in a viewer
@@ -146,4 +150,5 @@ def use_ellipse(
         orientation = orientation,
         center_poly = center,
         view_direction = view_direction,
+        mirrored=mirrored,
     )

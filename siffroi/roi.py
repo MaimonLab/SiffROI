@@ -85,6 +85,9 @@ class ROI():
         if not info_string is None:
             self.info_string = info_string
 
+        if not hasattr(self, 'subROIs'):
+            self.subROIs : list[subROI] = []
+
     def center(self, plane : Optional[int] = None)->np.ndarray:
         """
         If plane is None, returns the center of mass of the mask
@@ -162,26 +165,8 @@ class ROI():
     @property
     def subroi_masks(self) -> np.ndarray:
         """
-        Returns a list or array (depending on keyword argument ret_type) of the numpy masks of
-        all subROIs of this ROI. If the ROI does not have an assigned 'image' attribute, it can
-        also be provided as a keyword argument with keyword image.
-
-        Arguments
-        ---------
-
-        image : np.ndarray
-
-            A template image that provides the dimensions of the image that the mask needs to be
-            embedded in
-
-        ret_type : type
-
-            Can be any of
-                - list
-                - numpy.ndarray
-                - 'list'
-                - 'array'
-
+        Returns an arrayof the numpy masks of
+        all subROIs of this ROI.
         """
         if len(self.subROIs) == 0:
             raise NoROIError("No subROIs assigned to this ROI")
@@ -274,10 +259,11 @@ class ROI():
                 dtype = np.float32,
             ) if self._polygon is not None else f.create_dataset('polygon', dtype=np.float32)
 
-            subrois_group = f.create_group('subROIs')
+            if hasattr(self, 'subROIs') and len(self.subROIs) > 0:
+                subrois_group = f.create_group('subROIs')
 
-            for i, subroi in enumerate(self.subROIs):
-                subroi.save_to_group(subrois_group)
+                for i, subroi in enumerate(self.subROIs):
+                    subroi.save_to_group(subrois_group)
 
     @classmethod
     def load(
@@ -357,9 +343,9 @@ class ROI():
         
     def __hash__(self)->float:
         if hasattr(self, 'image'):
-            return hash((self.center, self.__class__.__name__, self.mask.tobytes()))
+            return hash((self.center(), self.__class__.__name__, self.mask.tobytes()))
         else:
-            return hash((self.center, self.__class__.name))
+            return hash((self.center(), self.__class__.name))
 
     @property
     def name(self)->str:
@@ -502,5 +488,4 @@ class subROI(ROI):
                     setattr(subroi, attr, subroi_group.attrs[attr])
             if attr in subroi_group.keys():
                 setattr(subroi, attr, subroi_group[attr][()])
-
         return subroi
