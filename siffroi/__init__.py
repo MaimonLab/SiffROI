@@ -73,6 +73,6 @@ def load_rois(path : 'PathLike', pattern : Optional[str] = None)->list['ROI']:
         pattern_regex = re.compile(pattern)
         return [
             ROI.load(roipath) for roipath in path.rglob('*.h5roi')
-            if pattern_regex.search(roipath.name)
+            if pattern_regex.search(str(roipath))
         ]
 

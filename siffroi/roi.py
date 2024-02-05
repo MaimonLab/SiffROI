@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 import importlib
 from logging import warning
-from typing import TYPE_CHECKING, Optional, Callable
+from typing import TYPE_CHECKING, Optional, Callable, Union
 
 from h5py import File as h5File
 from h5py import Empty, Group
@@ -14,6 +14,14 @@ from .utils import masks_to_rgba
 
 if TYPE_CHECKING:
     from .utils.types import PathLike, MaskLike, PolygonLike, ImageShapeLike
+
+def safe_load_attr(f : Union[h5File, Group], attr : str):
+    """ Returns empty if None """
+    return None if isinstance(att:= f.attrs.get(attr, None), Empty) else att
+
+def safe_load_ds(f : Union[h5File, Group], attr : str):
+    """ Returns empty if None """
+    return None if isinstance(att:= f[attr][()], Empty) else att
 
 # Between these sets of enums,
 # can uniquely define the orientation
@@ -215,22 +223,33 @@ class ROI():
         save_path = save_path / f"{self.__class__.__name__}_{self.hashname}.{self.__class__.FILE_EXTENSION}"
         save_path.parent.mkdir(parents = True, exist_ok=True)
 
+        def safe_save_attr(f : h5File, attr : str, typestr : str):
+            """ Saves as empty if None """
+            if getattr(self, attr) is None:
+                f.attrs[attr] = Empty(typestr)
+            else:
+                f.attrs[attr] = getattr(self, attr)
+
+        def safe_save_ds(f : h5File, attr : str, data : np.ndarray, dtype = None):
+            """ Saves as an empty dataset if None """
+            if data is None:
+                f.create_dataset(attr, dtype=dtype)
+            else:
+                f.create_dataset(attr, data = data, dtype=dtype)
+
         with h5File(save_path, 'w') as f:
-            f.attrs['name'] = self.name if self.name is not None else Empty("s")
-            f.attrs['slice_idx'] = self.slice_idx if self.slice_idx is not None else Empty("i")
+            safe_save_attr(f, 'name', 's')
+            safe_save_attr(f, 'slice_idx', 'i')
+
             f.attrs['class'] = self.__class__.__name__
             f.attrs['module'] = self.__class__.__module__
 
             if hasattr(self, 'info_string'):
-                f.attrs['info_string'] = self.info_string if self.info_string is not None else Empty("s")
+                safe_save_attr(f, 'info_string', 's')
 
             for attr in self.__class__.SAVE_ATTRS:
                 if isinstance(getattr(self,attr), np.ndarray):
-                    f.create_dataset(
-                        attr,
-                        data = getattr(self, attr),
-                        dtype = getattr(self, attr).dtype,
-                    )
+                    safe_save_ds(f, attr, getattr(self, attr), getattr(self, attr).dtype)
                 else:
                     this_attr = getattr(self, attr)
                     if this_attr is None:
@@ -241,23 +260,9 @@ class ROI():
                         attr_out = this_attr 
                     f.attrs[attr] = attr_out
 
-            f.create_dataset(
-                'mask',
-                data = self.mask,
-                dtype = bool,
-            ) if self.mask is not None else f.create_dataset('mask', dtype=bool)
-            
-            f.create_dataset(
-                'shape',
-                data = self.shape,
-                dtype = int,
-            ) if self.shape is not None else f.create_dataset('shape', dtype=int)
-
-            f.create_dataset(
-                'polygon',
-                data = self._polygon,
-                dtype = np.float32,
-            ) if self._polygon is not None else f.create_dataset('polygon', dtype=np.float32)
+            safe_save_ds(f, 'mask', self.mask, bool)
+            safe_save_ds(f, 'shape', self.shape, int)
+            safe_save_ds(f, 'polygon', self._polygon, np.float32)
 
             if hasattr(self, 'subROIs') and len(self.subROIs) > 0:
                 subrois_group = f.create_group('subROIs')
@@ -295,12 +300,12 @@ class ROI():
                 warning(f"Module {f.attrs['module']} not found. Attempting to import as a generic siffroi.ROI")
                 cls = ROI
 
-            mask = None if isinstance(mask:= f['mask'][()], Empty) else mask
-            polygon = None if isinstance(poly:= f['polygon'][()], Empty) else poly
-            image_shape = None if isinstance(src:= f['shape'][()], Empty) else src
-            name = None if isinstance(nm := f.attrs['name'],Empty) else nm
-            slice_idx = None if isinstance(sl_id := f.attrs['slice_idx'], Empty) else sl_id
-            info_string = None if (info := f.attrs.get('info_string', None)) is None else info
+            mask = safe_load_ds(f, 'mask')
+            polygon = safe_load_ds(f, 'polygon')
+            image_shape = safe_load_ds(f, 'shape')
+            name = safe_load_attr(f, 'name')
+            slice_idx = safe_load_attr(f, 'slice_idx')
+            info_string = f.attrs.get('info_string', None)
 
             subrois : list['subROI'] = []
             if 'subROIs' in f and len(f['subROIs']) > 0:
@@ -466,11 +471,12 @@ class subROI(ROI):
         
         Currently only loads the mask, image, polygon, name, and slice_idx.
         """
-        mask = None if isinstance(mask:= subroi_group['mask'][()], Empty) else mask
-        polygon = None if isinstance(poly:= subroi_group['polygon'][()], Empty) else poly
-        image_shape = None if isinstance(src:= subroi_group['shape'][()], Empty) else src
-        name = None if isinstance(nm := subroi_group.attrs['name'],Empty) else nm
-        slice_idx = None if isinstance(sl_id := subroi_group.attrs['slice_idx'], Empty) else sl_id
+
+        mask = safe_load_ds(subroi_group, 'mask')
+        polygon = safe_load_ds(subroi_group, 'polygon')
+        image_shape = safe_load_ds(subroi_group, 'shape')
+        name = safe_load_attr(subroi_group, 'name')
+        slice_idx = safe_load_attr(subroi_group, 'slice_idx')
 
         subroi = cls(
             mask = mask,

@@ -117,7 +117,11 @@ class Ellipse(ROI):
             raise NotImplementedError("Center mask not yet implemented for non-boolean center polygons")
 
 
-    def segment(self, n_segments : int = 16, viewed_from : ViewDirection = ViewDirection.ANTERIOR)->None:
+    def segment(
+            self,
+            n_segments : int = 16,
+            viewed_from : ViewDirection = ViewDirection.ANTERIOR,
+        )->None:
         """
         Creates an attribute wedges, a list of WedgeROIs corresponding to segments.
         If slice_idx is None, the wedges span all planes. If slice_idx is an integer,
@@ -141,8 +145,12 @@ class Ellipse(ROI):
                 'posterior'
         
         """
-        if isinstance(self.center_poly, np.ndarray) and (self.center_poly.dtype != bool):
-            raise TypeError("Center poly must be a boolean array in current implementation")
+        if (
+            isinstance(self.center_poly, np.ndarray)
+            and (self.center_poly.dtype != bool)
+        ):
+            raise TypeError("Center poly must be a boolean array" +
+                            " in current implementation")
         
         if self.slice_idx is None:
             slicewise_segments = [
@@ -155,6 +163,7 @@ class Ellipse(ROI):
                 )
                 for slice_num, slice_mask in enumerate(self.mask)
             ]
+            # Goes from z, segment, y, x to segment, z, y, x
             masks = np.swapaxes(
                 np.array(slicewise_segments), # z, mask, y, x
                 0,
@@ -184,6 +193,8 @@ class Ellipse(ROI):
                 zip(masks, phases)
             )
         ]
+
+        self.wedges.sort(key = lambda x: x.phase)
 
     def __str__(self)->str:
         return self.__repr__()
