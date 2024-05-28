@@ -1,5 +1,9 @@
 # SiffRoi
 
+This package needs a little more attention... I wrote it
+when I was a much less experienced programmer, and it certainly
+has some obvious issues in implementation.
+
 TODO:
 - Rework `UsesReferenceFramesMixin` to make it opt-out: if
 there's no reference frames, it can use the `PHOTON_COUNTS`

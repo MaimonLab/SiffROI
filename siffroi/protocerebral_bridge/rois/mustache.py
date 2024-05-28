@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 
@@ -42,7 +42,6 @@ class GlobularMustache(ROI):
 
     SAVE_ATTRS = [
         'view_direction',
-        'phases',
         'mirrored'
     ]
 
@@ -108,6 +107,13 @@ class GlobularMustache(ROI):
     def glomeruli(self):
         return self.subROIs
     
+    @property
+    def phases(self)->List[float]:
+        return [
+            x.pseudophase
+            for x in self.subROIs
+        ]
+
     def sort_glomeruli_by_phase(self):
         """
         Sorts glomeruli by pseudophase

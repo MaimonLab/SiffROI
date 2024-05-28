@@ -52,8 +52,8 @@ def nth_largest_shape_in_list(
         raise ValueError("No suitable shapes provided")
     if (n > len(shapes)) or (n < 1):
         raise ValueError(
-            f"n must be between 1 and the number of shapes provided." + 
-            "Requested {n}-largest of {len(shapes)} shapes"
+            "n must be between 1 and the number of shapes provided." + 
+            f"Requested {n}-largest of {len(shapes)} shapes"
         )
     
     if all([shape.dtype == bool for shape in shapes]):
@@ -304,7 +304,7 @@ def walk_along_polygon(
     
     # walk until you hit one of the end rays. If you started on one of the end rays, great
     # that means you skip this part and you just grab the end ray
-    while not (curr_idx in end_vector_idxs):
+    while curr_idx not in end_vector_idxs:
         # if direction is positive, then curr_idx+1 is the point to add to the list
         # if direction is negative, then curr_idx is the point to add
         encountered_points += [polygon_points[(curr_idx +(direction>0))%npoints]]
