@@ -265,7 +265,7 @@ class ROI():
             safe_save_ds(f, 'polygon', self._polygon, np.float32)
 
             if hasattr(self, 'subROIs') and len(self.subROIs) > 0:
-                subrois_group = f.create_group('subROIs')
+                subrois_group = f.create_group('subROIs', track_order=True)
 
                 for i, subroi in enumerate(self.subROIs):
                     subroi.save_to_group(subrois_group)
@@ -427,7 +427,8 @@ class subROI(ROI):
     def save_to_group(self, subROI_group : Group)->None:
         """ SubROIs save to the same file as their parent ROI, and so demand the h5file group """
         this_subroi = subROI_group.create_group(
-            self.hashname
+            self.hashname,
+            track_order=True,
         )
 
         this_subroi.attrs['name'] = self.name if self.name is not None else Empty("s")
