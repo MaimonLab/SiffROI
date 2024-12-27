@@ -10,7 +10,7 @@ from ...roi_protocol import ROIProtocol
 from ...utils import n_largest_shapes_in_list
 from ...utils.mixins import (
     UsesFrameDataMixin, ExpectsShapesMixin, UsesAnatomyReferenceMixin,
-    UsesReferenceFramesMixin,
+    UsesReferenceFramesMixin, AllowsExclusionsMixin
 )
 from ...utils.types import (
     FrameData, ReferenceFrames, AnatomyReference,
@@ -20,6 +20,7 @@ class DrawROI(
     ExpectsShapesMixin,
     UsesAnatomyReferenceMixin,
     UsesReferenceFramesMixin,
+    AllowsExclusionsMixin,
     ROIProtocol
     ):
 
@@ -38,6 +39,7 @@ class DrawROI(
         roi_name : str = "Noduli",
         slice_idx : Optional[int] = None,
         view_direction : ViewDirection = ViewDirection.POSTERIOR,
+        exclusion_layer : np.ndarray = None,
     )-> Blobs:
         
         image_shape = reference_frames.shape
@@ -64,7 +66,11 @@ class DrawROI(
             orientation += np.angle(1j*start_to_end)
             # I always find geometry with complex numbers much easier than using tangents etc.
 
-        
+        if exclusion_layer is not None:
+            blobs = np.logical_and(
+                blobs,
+                np.logical_not(exclusion_layer)
+            )
 
         return Blobs(
             mask = blobs if FROM_MASK else None,

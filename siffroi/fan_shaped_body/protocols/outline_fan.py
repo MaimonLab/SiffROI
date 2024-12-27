@@ -7,7 +7,8 @@ from ..rois.fan import Fan
 from ...roi_protocol import ROIProtocol
 from ...utils import nth_largest_shape_in_list
 from ...utils.mixins import (
-    UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, ExpectsShapesMixin
+    UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, ExpectsShapesMixin,
+    AllowsExclusionsMixin
 )
 from ...utils.types import (
     MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
@@ -18,6 +19,7 @@ class OutlineFan(
     ExpectsShapesMixin,
     UsesAnatomyReferenceMixin,
     UsesReferenceFramesMixin,
+    AllowsExclusionsMixin,
     ROIProtocol
     ):
 
@@ -40,6 +42,7 @@ class OutlineFan(
         mirrored : bool = True,
         slice_idx : Optional[int] = None,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
+        exclusion_layer : np.ndarray = None,
     )-> Fan:
         image_shape = reference_frames.shape
         return outline_fan(
@@ -50,6 +53,7 @@ class OutlineFan(
             roi_name = roi_name,
             view_direction=view_direction,
             slice_idx=slice_idx,
+            exclusion_layer = exclusion_layer,
         )
 
 def outline_fan(
@@ -60,6 +64,7 @@ def outline_fan(
         mirrored : bool = True,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
         slice_idx : Optional[int] = -1,
+        exclusion_layer : np.ndarray = None,
         **kwargs
     )-> Fan:
     """
@@ -94,6 +99,12 @@ def outline_fan(
         orientation += np.angle(1j*start_to_end)
         # I always find geometry with complex numbers much easier than using tangents etc.
 
+    if exclusion_layer is not None:
+        main_fan = np.logical_and(
+            main_fan,
+            np.logical_not(exclusion_layer)
+        )
+        
     return Fan(
         mask = main_fan if FROM_MASK else None,
         polygon = None if FROM_MASK else main_fan,

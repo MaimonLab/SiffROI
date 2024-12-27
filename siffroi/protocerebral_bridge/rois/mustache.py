@@ -131,6 +131,52 @@ class GlobularMustache(ROI):
             reverse = not increasing,
         )
 
+    def sort_glomeruli_by_snake(self):
+        """
+        Uses the shortest-path algorithm to sort glomeruli into a snake.
+        
+        May start at either end of the mustache, so use some analysis to
+        identify which end should go first (e.g. might need to use the direction
+        you're imaging from or whether the ROI is mirrored...)
+        """
+        try:
+           from python_tsp.exact import solve_tsp_dynamic_programming 
+        except ImportError:
+            print("Please install python-tsp to use this function"
+            " (pip install python-tsp)"
+            )
+            return
+        
+        # Get the centers of the glomeruli
+        centers = [glom.center() for glom in self.subROIs]
+
+        # Get the distance matrix
+        dists = np.linalg.norm(
+            np.array(centers)[:, None] - np.array(centers)[None],
+            axis = -1
+        )
+
+        # Add a "depot" that is distance 0 to all other points
+        dists = np.vstack([dists, np.zeros(len(dists))])
+        dists = np.hstack([dists, np.zeros((len(dists), 1))])
+
+        # solve the traveling salesman problem!
+
+        path, _ = solve_tsp_dynamic_programming(dists)
+
+        # Reorder to start at the depot
+
+        start_idx = np.argmax(path)
+        path = path[start_idx:] + path[:start_idx]
+
+        # now remove the deport
+
+        path = [p for p in path if p != len(self.subROIs)]
+
+        # Reorder the glomeruli
+        self.subROIs = [self.subROIs[p] for p in path]
+
+
 class GlomerulusROI(subROI):
     """
     A single glomerulus

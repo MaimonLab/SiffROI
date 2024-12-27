@@ -46,4 +46,18 @@ class ExpectsShapesMixin():
     def shape_arg_num(self)->int:
         """ Returns the position of the shapes argument in the extraction function """
         return list(self.extraction_args.keys()).index("shapes")
-    
+
+class AllowsExclusionsMixin():
+    """
+    `AllowsExclusions` means that the mask can be intersected with the negation of
+    an "exclusion mask" before extraction to ensure those pixels are ignored.
+    """ 
+
+    extraction_args : dict[str, Any]
+    ANATOMY_REFERENCE_SHAPE_TYPE : str = "any"
+    LAYER_NAME : str = "exclusion_layer"
+
+    @property
+    def exclusion_mask_arg_num(self)->int:
+        """ Returns the position of the exclusion_mask argument in the extraction function """
+        return list(self.extraction_args.keys()).index("exclusion_mask")

@@ -1,4 +1,4 @@
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import numpy as np
 
 from .extra_rois import ExtraRois
@@ -7,18 +7,20 @@ from ...roi import ViewDirection
 from ..rois.ellipse import Ellipse
 from ...utils import nth_largest_shape_in_list
 from ...utils.mixins import (
-    UsesAnatomyReferenceMixin, UsesReferenceFramesMixin, ExpectsShapesMixin
+    UsesAnatomyReferenceMixin, UsesReferenceFramesMixin, ExpectsShapesMixin,
+    AllowsExclusionsMixin
 )
 
 if TYPE_CHECKING:
     from ...utils.types import (
-        MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
+        AnatomyReference, ReferenceFrames
     )
 
 class UseEllipse(
         ExpectsShapesMixin,
         UsesAnatomyReferenceMixin,
         UsesReferenceFramesMixin,
+        AllowsExclusionsMixin,
         ROIProtocol
     ):
 
@@ -43,6 +45,7 @@ class UseEllipse(
         slice_idx : Optional[int] = None,
         extra_rois : 'ExtraRois' = ExtraRois.CENTER,
         view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
+        exclusion_layer : np.ndarray = None,
     )->Ellipse: 
         image_shape = reference_frames.shape
         return use_ellipse(
@@ -53,7 +56,8 @@ class UseEllipse(
             view_direction=view_direction,
             slice_idx=slice_idx,
             extra_rois=extra_rois,
-            mirrored=mirrored
+            mirrored=mirrored,
+            exclusion_layer = exclusion_layer,
         )
 
 def use_ellipse(
@@ -65,6 +69,7 @@ def use_ellipse(
     slice_idx : Optional[int] = -1,
     extra_rois : 'ExtraRois' = ExtraRois.CENTER,
     mirrored : bool = True,
+    exclusion_layer : np.ndarray = None,
     **kwargs) -> 'Ellipse':
     """
     Simply takes the largest ellipse type shape in a viewer
@@ -130,7 +135,7 @@ def use_ellipse(
 
     orientation = 0.0
 
-    if not (anatomy_reference is None) and (len(anatomy_reference) > 0):
+    if anatomy_reference is not None and (len(anatomy_reference) > 0):
         if isinstance(anatomy_reference, (tuple,list)):
             anatomy_reference = anatomy_reference[0]
         # Goes postero-dorsal to antero-ventral
@@ -140,6 +145,12 @@ def use_ellipse(
         start_to_end = (end_pt[-1] - start_pt[-1]) - 1j*(end_pt[0] - start_pt[0])
         orientation += np.angle(1j*start_to_end)
         # I always find geometry with complex numbers much easier than using tangents etc.
+
+    if exclusion_layer is not None:
+        main_ellip = np.logical_and(
+            main_ellip,
+            np.logical_not(exclusion_layer)
+        )
 
     return Ellipse(
         mask = main_ellip if FROM_MASK else None,

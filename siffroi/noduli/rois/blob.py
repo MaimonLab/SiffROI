@@ -32,7 +32,7 @@ class Blobs(ROI):
 
         view_direction = ViewDirection(view_direction)
 
-        if not "name" in kwargs:
+        if "name" not in kwargs:
             kwargs["name"] = "Fan"
         super().__init__(
             mask=mask,

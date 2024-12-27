@@ -1,4 +1,4 @@
-from typing import Any, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional
 import numpy as np
 from scipy.ndimage import center_of_mass
 
@@ -77,7 +77,7 @@ class Ellipse(ROI):
         the line from posterodorsal to anteroventral is rotated clockwise
         IN THE IMAGE. So ventral at the bottom = orientation = 3/2 * pi
         """
-        if not "name" in kwargs:
+        if "name" not in kwargs:
             kwargs["name"] = "Ellipse"
         super().__init__(
             mask = mask,
@@ -99,7 +99,7 @@ class Ellipse(ROI):
     @property
     def mask(self)->np.ndarray:
         """ Returns the mask of the Ellipse """
-        if not (self._mask is None):
+        if self._mask is not None:
             return self._mask
         
         raise NotImplementedError("Mask from polygon not yet implemented for Ellipse")

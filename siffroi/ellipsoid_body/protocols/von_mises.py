@@ -8,7 +8,6 @@ Protocerebral Bridge one but returns an Ellipse
 # Feels like I use too much interfacing with the CorrelationWindow class,
 # which seems like it should do as much as possible without interacting with
 # this stuff...
-from typing import Any
 
 import numpy as np
 from fourcorr import FourCorrAnalysis
