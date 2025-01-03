@@ -7,11 +7,14 @@ These geometries are all (x,y) not (y,x) the way images are.
 
 SCT Dec 29 2021
 """
-from typing import Iterable, Optional
+from typing import Iterable, Optional, TYPE_CHECKING
 
 from matplotlib.path import Path as mplPath
 from matplotlib.pyplot import get_cmap
 import numpy as np
+
+if TYPE_CHECKING:
+    from matplotlib.colors import Colormap
 
 def polygon_area(vertices : np.ndarray) -> float:
     """
@@ -28,6 +31,17 @@ def masks_to_rgba(labeled_image_mask : np.ndarray, cmap_str : str = 'hsv')->np.n
     """
 
     cmap = get_cmap(cmap_str)
+
+    rgba = cmap(
+        (labeled_image_mask.astype(float)/labeled_image_mask.max()) ,
+        alpha = labeled_image_mask > 0,
+    )
+    return rgba
+
+def masks_to_cmap(labeled_image_mask : np.ndarray, cmap : 'Colormap')->np.ndarray:
+    """
+    Converts a labeled mask to an RGBA image with hsv cmap.
+    """
 
     rgba = cmap(
         (labeled_image_mask.astype(float)/labeled_image_mask.max()) ,

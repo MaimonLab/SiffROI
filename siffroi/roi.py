@@ -14,6 +14,7 @@ from .utils import masks_to_rgba
 
 if TYPE_CHECKING:
     from .utils.types import PathLike, MaskLike, PolygonLike, ImageShapeLike
+    from matplotlib.colors import Colormap
 
 def safe_load_attr(f : Union[h5File, Group], attr : str):
     """ Returns empty if None """
@@ -83,14 +84,14 @@ class ROI():
         if all([x is None for x in [mask, polygon, image_shape]]):
             raise NoROIError("ROI must be defined with either a mask or a polygon and image")
         
-        if not name is None:
+        if name is not None:
             self._name = name
         
         self.slice_idx = slice_idx
         if len(subROIs) > 0:
             self.subROIs = subROIs
 
-        if not info_string is None:
+        if info_string is not None:
             self.info_string = info_string
 
         if not hasattr(self, 'subROIs'):
@@ -105,7 +106,7 @@ class ROI():
         If slice_idx is an int, then plane is ignored.
         """
         mask = self.mask
-        if not (self.slice_idx is None):
+        if self.slice_idx is not None:
             plane = None
         if plane is None:
             return center_of_mass(mask)
@@ -148,7 +149,7 @@ class ROI():
         Returns a mask of the polygon, True inside and False outside.
         Needs an image to define the bounds, if one hasn't been provided to the ROI before
         """
-        if not (self._mask is None):
+        if self._mask is not None:
             return self._mask.astype(bool)
 
         raise NotImplementedError("Mask from polygon not yet implemented")
@@ -157,7 +158,7 @@ class ROI():
     @property
     def shape(self)->tuple[int]:
         """ Returns the shape of the ROI mask """
-        if not (self._mask is None):
+        if self._mask is not None:
             return self._mask.shape
         
         return self._shape
@@ -165,7 +166,7 @@ class ROI():
     @property
     def polygon(self)->np.ndarray:
         """ Returns the polygon of the ROI """
-        if not (self._polygon is None):
+        if self._polygon is not None:
             return self._polygon
 
         raise NotImplementedError("Generating a polygon from mask not yet implemented") 
@@ -202,6 +203,13 @@ class ROI():
         as transparent using the heatmap 'turbo'
         """
         return masks_to_rgba(self.labeled_subrois)
+    
+    def rgba_subrois_cmap(self, cmap : 'Colormap') -> np.ndarray:
+        """
+        Labeled_subrois as an RGBA image with the background
+        as transparent using the specified colormap
+        """
+        return masks_to_rgba(self.labeled_subrois, cmap = cmap)
 
 
     def save(self, save_path : 'PathLike')->None:
