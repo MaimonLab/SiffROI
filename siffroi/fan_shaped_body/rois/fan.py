@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from scipy.ndimage import center_of_mass
@@ -39,7 +39,7 @@ class Fan(ROI):
             mirrored : bool = True,
             **kwargs
         ):
-        if not "name" in kwargs:
+        if "name" not in kwargs:
             kwargs["name"] = "Fan"
         super().__init__(
             mask=mask,
@@ -64,7 +64,7 @@ class Fan(ROI):
         """
         Returns the mask of the Fan as a numpy array.
         """
-        if not (self._mask is None):
+        if self._mask is not None:
             return self._mask
         raise NotImplementedError("Fan mask from polygon not yet implemented")
     
@@ -148,7 +148,7 @@ class Fan(ROI):
         if hasattr(self,'perspective'):
             ret_str += f"\tViewed from {self.view_direction.value} direction\n"
         if hasattr(self,'midline'):
-            ret_str += f"Midline defined as\n"
+            ret_str += "Midline defined as\n"
 
         return ret_str
 

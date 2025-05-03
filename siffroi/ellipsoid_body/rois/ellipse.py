@@ -159,7 +159,8 @@ class Ellipse(ROI):
                     self.center(plane=slice_num) if self.center_poly is None else center_of_mass(self.center_mask[slice_num]),
                     self.orientation,
                     n_segments = n_segments,
-                    view_direction= self.view_direction
+                    view_direction= self.view_direction,
+                    aspect_ratio = self.aspect_ratio,
                 )
                 for slice_num, slice_mask in enumerate(self.mask)
             ]
@@ -175,7 +176,8 @@ class Ellipse(ROI):
                 self.center() if self.center_poly is None else center_of_mass(self.center_mask),
                 self.orientation,
                 n_segments = n_segments,
-                view_direction= self.view_direction
+                view_direction= self.view_direction,
+                aspect_ratio = self.aspect_ratio,
             )
         phases = np.linspace(-np.pi, np.pi, n_segments, endpoint=False)
         if self.mirrored:
@@ -188,6 +190,7 @@ class Ellipse(ROI):
                 view_direction = self.view_direction,
                 name = f"Wedge {i}",
                 phase = angle,
+                aspect_ratio = self.aspect_ratio,
             )
             for i, (wedge_mask, angle) in enumerate(
                 zip(masks, phases)
@@ -281,7 +284,8 @@ def segment_ellipse(
     center_pt : np.ndarray,
     orientation : float,
     n_segments : int = 16,
-    view_direction : ViewDirection = ViewDirection.ANTERIOR
+    view_direction : ViewDirection = ViewDirection.ANTERIOR,
+    aspect_ratio : float = 1.0,
 )->list[np.ndarray]:
     """
     Draws spokes radiating from center_pt and
@@ -303,6 +307,7 @@ def segment_ellipse(
     grid_yy, grid_xx = np.meshgrid(*(np.arange(dim) for dim in ellipse_mask.shape), indexing = 'ij')
     
     cplx_mask = grid_xx - 1j*grid_yy - center
+    cplx_mask.imag *= aspect_ratio # Stretch the y-axis to match real space
 
     cplx_mask *= -1j # Rotate the 0 point downward in image coordinates
     cplx_mask *= np.exp(-1j*orientation) # Rotate the ellipse to the correct orientation

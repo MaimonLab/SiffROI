@@ -58,6 +58,7 @@ class ROI():
             slice_idx   : Optional[int]             = None,
             subROIs     : list['subROI']            = [],
             info_string : Optional[str]             = None,
+            aspect_ratio : float                    = 1.0,
         ):
         """
         Can be defined either with a mask or a polygon with a source image. If a mask
@@ -96,6 +97,8 @@ class ROI():
 
         if not hasattr(self, 'subROIs'):
             self.subROIs : list[subROI] = []
+
+        self.aspect_ratio = aspect_ratio
 
     def center(self, plane : Optional[int] = None)->np.ndarray:
         """

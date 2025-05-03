@@ -51,7 +51,11 @@ REGIONS = [
     )
 ]
 
-def load_rois(path : 'PathLike', pattern : Optional[str] = None)->list['ROI']:
+def load_rois(
+        path : 'PathLike',
+        pattern : Optional[str] = None,
+        roi_type : Optional[type['ROI']] = None
+    )->list['ROI']:
     """
     If `pattern` is None, just loads all ROIs in subdirectories of `path`.
     Otherwise, loads all ROIs in subdirectories of `path` whose name matches
@@ -65,14 +69,28 @@ def load_rois(path : 'PathLike', pattern : Optional[str] = None)->list['ROI']:
     pattern : Optional[str], optional
         Regex pattern to match against ROI names, by default None. Must
         be a valid regex pattern.
+    
+    roi_type : Optional[type[ROI]], optional
+        If specified, only returns ROIs of this type, by default None (includes all
+        types).
+
+    Returns
+    -------
+
+    list[ROI]
+        List of ROIs that match the specified pattern and type.
     """
     path = Path(path)
     if pattern is None:
-        return [ROI.load(roipath) for roipath in path.rglob('*.h5roi')]
+        viable_rois = [ROI.load(roipath) for roipath in path.rglob('*.h5roi')]
     else:
         pattern_regex = re.compile(pattern)
-        return [
+        viable_rois = [
             ROI.load(roipath) for roipath in path.rglob('*.h5roi')
             if pattern_regex.search(str(roipath))
         ]
+    if roi_type is None:
+        return viable_rois
+    else:
+        return [roi for roi in viable_rois if isinstance(roi, roi_type)]
 

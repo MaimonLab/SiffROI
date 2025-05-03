@@ -46,6 +46,8 @@ class UseEllipse(
         extra_rois : 'ExtraRois' = ExtraRois.CENTER,
         view_direction : 'ViewDirection' = ViewDirection.ANTERIOR,
         exclusion_layer : np.ndarray = None,
+        *,
+        aspect_ratio : float = 1.0,
     )->Ellipse: 
         image_shape = reference_frames.shape
         return use_ellipse(
@@ -58,6 +60,7 @@ class UseEllipse(
             extra_rois=extra_rois,
             mirrored=mirrored,
             exclusion_layer = exclusion_layer,
+            aspect_ratio = aspect_ratio
         )
 
 def use_ellipse(
@@ -70,6 +73,7 @@ def use_ellipse(
     extra_rois : 'ExtraRois' = ExtraRois.CENTER,
     mirrored : bool = True,
     exclusion_layer : np.ndarray = None,
+    aspect_ratio : float = 1.0,
     **kwargs) -> 'Ellipse':
     """
     Simply takes the largest ellipse type shape in a viewer
@@ -162,4 +166,5 @@ def use_ellipse(
         center_poly = center,
         view_direction = view_direction,
         mirrored=mirrored,
+        aspect_ratio = aspect_ratio,
     )

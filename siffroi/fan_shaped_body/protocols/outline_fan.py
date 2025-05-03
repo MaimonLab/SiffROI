@@ -1,5 +1,5 @@
 # Code for ROI extraction from the fan-shaped body after manual input
-from typing import Any, Optional
+from typing import Optional
 import numpy as np
 
 from ...roi import ViewDirection
@@ -7,12 +7,10 @@ from ..rois.fan import Fan
 from ...roi_protocol import ROIProtocol
 from ...utils import nth_largest_shape_in_list
 from ...utils.mixins import (
-    UsesReferenceFramesMixin, UsesAnatomyReferenceMixin, ExpectsShapesMixin,
-    AllowsExclusionsMixin
+    UsesReferenceFramesMixin, UsesAnatomyReferenceMixin,
+    ExpectsShapesMixin, AllowsExclusionsMixin
 )
-from ...utils.types import (
-    MaskLike, PolygonLike, ImageShapeLike, AnatomyReference, ReferenceFrames
-)
+from ...utils.types import AnatomyReference, ReferenceFrames
 
 
 class OutlineFan(
@@ -43,6 +41,8 @@ class OutlineFan(
         slice_idx : Optional[int] = None,
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
         exclusion_layer : np.ndarray = None,
+        *,
+        aspect_ratio : float = 1.0,
     )-> Fan:
         image_shape = reference_frames.shape
         return outline_fan(
@@ -54,6 +54,7 @@ class OutlineFan(
             view_direction=view_direction,
             slice_idx=slice_idx,
             exclusion_layer = exclusion_layer,
+            aspect_ratio = aspect_ratio,
         )
 
 def outline_fan(
@@ -65,6 +66,7 @@ def outline_fan(
         view_direction : ViewDirection = ViewDirection.ANTERIOR,
         slice_idx : Optional[int] = -1,
         exclusion_layer : np.ndarray = None,
+        aspect_ratio : float = 1.0,
         **kwargs
     )-> Fan:
     """
@@ -88,7 +90,7 @@ def outline_fan(
 
     orientation = 0.0
 
-    if not (anatomy_reference is None) and (len(anatomy_reference) > 0):
+    if anatomy_reference is not None and (len(anatomy_reference) > 0):
         if isinstance(anatomy_reference, (tuple,list)):
             anatomy_reference = anatomy_reference[0]
         # Goes postero-dorsal to antero-ventral
@@ -114,4 +116,5 @@ def outline_fan(
         mirrored=mirrored,
         orientation = orientation,
         view_direction = view_direction,
+        aspect_ratio = aspect_ratio,
     )

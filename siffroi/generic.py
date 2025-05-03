@@ -28,6 +28,8 @@ class GenericRoi(
         shapes : list[np.ndarray],
         roi_name : str = 'ROI',
         slice_idx : Optional[int] = None,
+        *,
+        aspect_ratio : float = 1.0,
     )->ROI:
         """ Returns a single ROI from a polygon or set of polygons drawn by the user """
         
@@ -54,5 +56,6 @@ class GenericRoi(
             image_shape = reference_frames.shape,
             slice_idx = slice_idx,
             name = roi_name,
+            aspect_ratio = aspect_ratio,
         )
 
