@@ -179,7 +179,11 @@ class Ellipse(ROI):
                 view_direction= self.view_direction,
                 aspect_ratio = self.aspect_ratio,
             )
-        phases = np.linspace(-np.pi, np.pi, n_segments, endpoint=False)
+        phases = np.linspace(-np.pi + np.pi / n_segments,
+                             np.pi - np.pi / n_segments,
+                             n_segments,
+                             endpoint=True,
+                            )
         if self.mirrored:
             phases = phases[::-1]
         self.subROIs = [
@@ -298,6 +302,7 @@ def segment_ellipse(
 
     view_direction = ViewDirection(view_direction)
 
+    # edges of wedges
     angles = np.linspace(-np.pi, np.pi, n_segments+1, endpoint = True)
 
     # Draw a line from the center to the edge of the ellipse

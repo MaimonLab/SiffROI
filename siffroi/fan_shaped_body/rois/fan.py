@@ -74,7 +74,7 @@ class Fan(ROI):
         method : FanSegmentationMethod = FanSegmentationMethod.TRIANGLES,
         viewed_from : ViewDirection = ViewDirection.ANTERIOR
         )->None:
-        """
+        r"""
         Divides the fan in to n_segments of 'equal width', 
         defined according to the segmentation method.
 
@@ -221,7 +221,7 @@ def fit_triangles(
         n_segments : int = 8,
         view_direction : ViewDirection = ViewDirection.ANTERIOR
     )->list[np.ndarray]:
-        """
+        r"""
         Find the centroid of a plane's mask, move along the 'orientation' axis
         until you find the most downward point, and then divide the plane into
         n_segments wedges extending from the centroid to the most downward point.
@@ -295,7 +295,10 @@ def fit_triangles(
     ]).swapaxes(0,1) # segment, slice, y, x
 
     phases = np.linspace(
-        0, 2*np.pi, n_segments, endpoint=False
+        -np.pi + np.pi / n_segments,
+        np.pi - np.pi / n_segments,
+        n_segments,
+        endpoint=True,
     )
     if mirrored:
         phases = phases[::-1]
